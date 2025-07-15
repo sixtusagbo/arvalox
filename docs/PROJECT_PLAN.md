@@ -1,10 +1,10 @@
-# Accounts Receivable System - Final Year Project
+# Arvalox - SaaS Accounts Receivable System - Final Year Project
 
-## Full-Stack Implementation Guide
+## Full-Stack SaaS Implementation Guide
 
 ### Project Overview
 
-A comprehensive accounts receivable management system built with Python FastAPI backend and Next.js TypeScript frontend. This system will handle customer invoicing, payment tracking, and financial reporting for small to medium businesses.
+A comprehensive Software-as-a-Service (SaaS) accounts receivable management platform built with Python FastAPI backend and Next.js TypeScript frontend. This multi-tenant system will serve small to medium businesses with subscription-based pricing, enabling them to manage customer invoicing, payment tracking, and financial reporting through a modern web application.
 
 ### Technology Stack
 
@@ -34,6 +34,13 @@ A comprehensive accounts receivable management system built with Python FastAPI 
 - **Local File Storage** - PDF invoice storage on server (development)
 - **Cloudinary** - Cloud-based file storage and CDN (production)
 
+**SaaS & Business Tools**
+
+- **Stripe** - Subscription billing and payment processing
+- **Resend/SendGrid** - Transactional email service
+- **Sentry** - Error tracking and monitoring
+- **PostHog** - Product analytics and feature flags
+
 **Additional Tools (If necessary)**
 
 - **Docker** - Containerization
@@ -44,46 +51,60 @@ A comprehensive accounts receivable management system built with Python FastAPI 
 
 ---
 
-## Core MVP Features
+## Core SaaS MVP Features
 
-### 1. Authentication & User Management
+### 1. Multi-Tenant Architecture & Organization Management
+
+- Organization/company registration and setup
+- Multi-tenant data isolation and security
+- Organization settings and configuration
+- Subscription plan management
+- Usage tracking and limits enforcement
+
+### 2. Authentication & User Management
 
 - User registration and login system
+- Multi-tenant user management (users belong to organizations)
 - Role-based access control (Admin, Accountant, Sales Representative)
 - JWT token-based authentication
 - Password reset functionality
 - User profile management
+- Organization invitation system
 
-### 2. Customer Management
+### 3. Customer Management
 
-- Complete customer CRUD operations
+- Complete customer CRUD operations (tenant-scoped)
 - Customer information storage (name, email, phone, address)
 - Billing and shipping addresses
 - Credit limit management
 - Payment terms configuration (Net 30, Net 60, etc.)
 - Customer status tracking (Active, Inactive, Suspended)
+- Customer import/export functionality
 
-### 3. Invoice Management
+### 4. Invoice Management
 
-- Create, edit, and delete invoices
-- Multiple invoice templates
+- Create, edit, and delete invoices (tenant-scoped)
+- Multiple customizable invoice templates with branding
 - Line item management with quantities and prices
 - Tax calculation support
 - Invoice status tracking (Draft, Sent, Paid, Overdue, Cancelled)
-- Automatic invoice numbering
+- Automatic invoice numbering per organization
 - PDF invoice generation and download
 - Invoice search and filtering
+- Bulk invoice operations
+- Invoice usage limits based on subscription plan
 
-### 4. Payment Tracking
+### 5. Payment Tracking
 
-- Record payments against specific invoices
+- Record payments against specific invoices (tenant-scoped)
 - Partial payment support
 - Multiple payment methods (Cash, Check, Bank Transfer, Credit Card)
 - Payment allocation across multiple invoices
 - Payment history and audit trail
 - Overpayment and credit handling
+- Payment gateway integration for online payments
 
-### 5. Financial Reporting & Dashboard
+### 6. Financial Reporting & Dashboard
 
 - Accounts receivable aging report (30, 60, 90+ days)
 - Outstanding invoices summary
@@ -91,39 +112,72 @@ A comprehensive accounts receivable management system built with Python FastAPI 
 - Revenue analytics and trends
 - Key performance indicators dashboard
 - Export functionality (PDF, CSV)
+- Multi-tenant reporting with data isolation
+- Usage analytics for subscription management
 
-### 6. Core Business Logic
+### 7. SaaS Business Logic
+
+- Subscription plan enforcement and usage limits
+- Automatic billing and subscription management
+- Trial period management
+- Feature access control based on subscription tier
+- Organization onboarding workflows
+
+### 8. Core Business Logic
 
 - Automatic calculation of due dates
 - Overdue invoice identification
 - Credit limit enforcement
 - Tax calculations
 - Currency formatting and handling
+- Multi-tenant data isolation and security
 
 ---
 
 ## Database Schema Design
 
-### Core Tables
+### Core SaaS Tables
 
 ```sql
--- Users table
-CREATE TABLE users (
+-- Organizations table (Multi-tenancy)
+CREATE TABLE organizations (
     id SERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
-    role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'accountant', 'sales_rep')),
-    is_active BOOLEAN DEFAULT TRUE,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    address TEXT,
+    subscription_plan VARCHAR(50) NOT NULL DEFAULT 'trial' CHECK (subscription_plan IN ('trial', 'starter', 'professional', 'enterprise')),
+    subscription_status VARCHAR(50) NOT NULL DEFAULT 'active' CHECK (subscription_status IN ('active', 'cancelled', 'past_due', 'unpaid')),
+    trial_ends_at TIMESTAMP,
+    invoice_limit INTEGER DEFAULT 10,
+    user_limit INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Customers table
+-- Users table (Multi-tenant)
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    role VARCHAR(50) NOT NULL CHECK (role IN ('owner', 'admin', 'accountant', 'sales_rep')),
+    is_active BOOLEAN DEFAULT TRUE,
+    invited_at TIMESTAMP,
+    joined_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(organization_id, email)
+);
+
+-- Customers table (Multi-tenant)
 CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
-    customer_code VARCHAR(50) UNIQUE NOT NULL,
+    organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
+    customer_code VARCHAR(50) NOT NULL,
     company_name VARCHAR(255) NOT NULL,
     contact_name VARCHAR(255),
     email VARCHAR(255),
@@ -135,13 +189,15 @@ CREATE TABLE customers (
     tax_id VARCHAR(50),
     status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'suspended')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(organization_id, customer_code)
 );
 
--- Invoices table
+-- Invoices table (Multi-tenant)
 CREATE TABLE invoices (
     id SERIAL PRIMARY KEY,
-    invoice_number VARCHAR(50) UNIQUE NOT NULL,
+    organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
+    invoice_number VARCHAR(50) NOT NULL,
     customer_id INTEGER REFERENCES customers(id) ON DELETE CASCADE,
     user_id INTEGER REFERENCES users(id),
     invoice_date DATE NOT NULL,
@@ -153,7 +209,8 @@ CREATE TABLE invoices (
     status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid', 'overdue', 'cancelled')),
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(organization_id, invoice_number)
 );
 
 -- Invoice Items table
@@ -178,31 +235,71 @@ CREATE TABLE payments (
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+-- Subscription billing table
+CREATE TABLE subscriptions (
+    id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
+    stripe_subscription_id VARCHAR(255) UNIQUE,
+    stripe_customer_id VARCHAR(255),
+    plan_name VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    current_period_start TIMESTAMP,
+    current_period_end TIMESTAMP,
+    trial_end TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
 ### Indexes for Performance
 
 ```sql
 -- Create indexes for better query performance
+CREATE INDEX idx_users_organization_id ON users(organization_id);
+CREATE INDEX idx_customers_organization_id ON customers(organization_id);
+CREATE INDEX idx_invoices_organization_id ON invoices(organization_id);
 CREATE INDEX idx_invoices_customer_id ON invoices(customer_id);
 CREATE INDEX idx_invoices_status ON invoices(status);
 CREATE INDEX idx_invoices_due_date ON invoices(due_date);
 CREATE INDEX idx_payments_invoice_id ON payments(invoice_id);
 CREATE INDEX idx_customers_status ON customers(status);
+CREATE INDEX idx_organizations_slug ON organizations(slug);
 ```
 
 ---
 
-## API Design
+## SaaS API Design
+
+### Organization & Onboarding Endpoints
+
+```
+POST /api/organizations/register    - Organization registration (signup)
+GET  /api/organizations/current     - Get current organization details
+PUT  /api/organizations/current     - Update organization settings
+POST /api/organizations/invite      - Invite user to organization
+GET  /api/organizations/usage       - Get current usage statistics
+```
 
 ### Authentication Endpoints
 
 ```
-POST /api/auth/register        - User registration
-POST /api/auth/login           - User login
+POST /api/auth/register        - User registration (with organization)
+POST /api/auth/login           - User login (multi-tenant)
 POST /api/auth/refresh         - Refresh JWT token
 POST /api/auth/logout          - User logout
 POST /api/auth/reset-password  - Password reset
+POST /api/auth/accept-invite   - Accept organization invitation
+```
+
+### Subscription Management
+
+```
+GET  /api/subscriptions/plans       - Get available subscription plans
+POST /api/subscriptions/checkout    - Create Stripe checkout session
+GET  /api/subscriptions/current     - Get current subscription details
+POST /api/subscriptions/cancel      - Cancel subscription
+POST /api/subscriptions/reactivate  - Reactivate subscription
+POST /api/webhooks/stripe           - Stripe webhook handler
 ```
 
 ### Customer Management
@@ -249,42 +346,70 @@ GET    /api/reports/customers  - Customer performance report
 
 ---
 
-## 12-Week Development Roadmap
+## 15-Week SaaS Development Roadmap
 
-### Week 1-2: Project Foundation & Setup
+### Week 1-2: SaaS Foundation & Multi-Tenant Setup
 
 **Backend Setup**
 
-- Initialize FastAPI project structure
-- Configure PostgreSQL database
-- Set up SQLAlchemy models and database connection
-- Implement basic authentication with JWT
-- Create user registration and login endpoints
+- Initialize FastAPI project structure with multi-tenant architecture
+- Configure PostgreSQL database with organization-based data isolation
+- Set up SQLAlchemy models with multi-tenant relationships
+- Implement JWT authentication with organization context
+- Create organization registration and user invitation system
 - Set up database migrations with Alembic
+- Implement tenant-scoped middleware
 
 **Frontend Setup**
 
 - Initialize Next.js project with TypeScript
-- Configure Tailwind CSS
-- Set up project folder structure
-- Create basic layout components
-- Implement authentication context and hooks
-- Set up API client with Axios
+- Configure Tailwind CSS with custom branding support
+- Set up project folder structure for SaaS application
+- Create organization onboarding flow components
+- Implement authentication context with multi-tenant support
+- Set up API client with tenant-aware requests
+- Create landing page and pricing page
 
 **Deliverables**
 
-- Working authentication system
-- Database schema implemented
-- Basic project structure for both frontend and backend
+- Multi-tenant authentication system
+- Organization registration and onboarding flow
+- Database schema with proper tenant isolation
+- Landing page with pricing tiers
 
-### Week 3-4: Customer Management Module
+### Week 3-4: Subscription & Billing Integration
 
 **Backend Development**
 
-- Create customer model and CRUD operations
-- Implement customer validation rules
+- Integrate Stripe for subscription management
+- Create subscription plans and pricing logic
+- Implement usage tracking and limits enforcement
+- Set up Stripe webhooks for subscription events
+- Create billing and subscription management endpoints
+
+**Frontend Development**
+
+- Design subscription management dashboard
+- Create pricing page with plan comparison
+- Implement Stripe checkout integration
+- Add usage tracking displays and limit warnings
+- Create billing history and invoice management
+
+**Deliverables**
+
+- Working subscription billing system
+- Usage limits and tracking
+- Stripe integration for payments
+- Subscription management interface
+
+### Week 5-6: Customer Management Module
+
+**Backend Development**
+
+- Create tenant-scoped customer model and CRUD operations
+- Implement customer validation rules with organization context
 - Add customer search and filtering capabilities
-- Create customer-related API endpoints
+- Create customer-related API endpoints with proper tenant isolation
 
 **Frontend Development**
 
@@ -296,19 +421,20 @@ GET    /api/reports/customers  - Customer performance report
 
 **Deliverables**
 
-- Complete customer management system
+- Complete multi-tenant customer management system
 - Customer listing, creation, editing, and deletion
 - Search and filter functionality
 
-### Week 5-7: Invoice Management System
+### Week 7-9: Invoice Management System
 
 **Backend Development**
 
-- Create invoice and invoice item models
-- Implement invoice business logic (calculations, status management)
-- Add invoice numbering system
-- Create invoice PDF generation with ReportLab
-- Implement invoice CRUD operations
+- Create tenant-scoped invoice and invoice item models
+- Implement invoice business logic with usage limits
+- Add organization-specific invoice numbering system
+- Create invoice PDF generation with custom branding
+- Implement invoice CRUD operations with tenant isolation
+- Add invoice usage tracking and plan enforcement
 
 **Frontend Development**
 
@@ -316,23 +442,25 @@ GET    /api/reports/customers  - Customer performance report
 - Create invoice listing page with status filters
 - Implement invoice detail/preview page
 - Add PDF generation and download functionality
-- Create invoice templates
+- Create customizable invoice templates with branding
+- Add usage limit warnings and upgrade prompts
 
 **Deliverables**
 
-- Complete invoice management system
-- PDF generation capability
+- Complete multi-tenant invoice management system
+- PDF generation with custom branding
 - Invoice status tracking
-- Professional invoice templates
+- Usage-aware invoice creation with plan limits
 
-### Week 8-9: Payment Processing & Financial Operations
+### Week 10-11: Payment Processing & Financial Operations
 
 **Backend Development**
 
-- Create payment model and processing logic
+- Create tenant-scoped payment model and processing logic
 - Implement payment allocation algorithms
 - Add payment validation and business rules
 - Create payment history tracking
+- Integrate payment gateway APIs (Paystack/Flutterwave)
 
 **Frontend Development**
 
@@ -341,21 +469,24 @@ GET    /api/reports/customers  - Customer performance report
 - Implement payment allocation interface
 - Add payment method selection
 - Create payment confirmation flows
+- Add online payment integration
 
 **Deliverables**
 
-- Payment recording and tracking system
+- Multi-tenant payment recording and tracking system
 - Payment allocation functionality
 - Payment history and audit trails
+- Online payment gateway integration
 
-### Week 10-11: Reporting & Analytics Dashboard
+### Week 12-13: Reporting & Analytics Dashboard
 
 **Backend Development**
 
-- Implement aging report calculations
-- Create dashboard metrics endpoints
+- Implement tenant-scoped aging report calculations
+- Create dashboard metrics endpoints with organization context
 - Add data export functionality
-- Optimize query performance for reports
+- Optimize query performance for multi-tenant reports
+- Add usage analytics for subscription management
 
 **Frontend Development**
 
@@ -364,44 +495,113 @@ GET    /api/reports/customers  - Customer performance report
 - Add export functionality for reports
 - Create responsive analytics views
 - Implement date range filters
+- Add subscription usage dashboards
 
 **Deliverables**
 
-- Comprehensive reporting system
-- Interactive dashboard
+- Comprehensive multi-tenant reporting system
+- Interactive dashboard with usage analytics
 - Data visualization components
 - Export functionality
 
-### Week 12: Testing, Documentation & Deployment
+### Week 14-15: Testing, Documentation & Production Launch
 
 **Testing**
 
-- Write unit tests for backend APIs
-- Create integration tests for critical workflows
+- Write unit tests for backend APIs with multi-tenant scenarios
+- Create integration tests for critical SaaS workflows
+- Test subscription billing and webhook handling
 - Implement frontend component testing
-- Perform end-to-end testing
+- Perform end-to-end testing across different subscription plans
+- Load testing for multi-tenant scenarios
 
 **Documentation**
 
-- Create API documentation with FastAPI's automatic docs
-- Write user manual and system documentation
-- Create deployment guides
-- Document system architecture
+- Create comprehensive API documentation with FastAPI's automatic docs
+- Write user manual and onboarding guides
+- Create deployment and scaling guides
+- Document SaaS architecture and multi-tenancy approach
+- Create customer support documentation
 
-**Deployment**
+**Production Launch**
 
-- Set up production environment
-- Configure CI/CD pipeline
-- Deploy backend to cloud platform (Railway/Heroku)
-- Deploy frontend to Vercel
-- Set up monitoring and logging
+- Set up production environment with proper scaling
+- Configure CI/CD pipeline with staging environment
+- Deploy backend to cloud platform (Railway/Heroku/DigitalOcean)
+- Deploy frontend to Vercel with custom domain
+- Set up monitoring, logging, and error tracking
+- Configure backup and disaster recovery
+- Launch beta program with initial customers
 
 **Deliverables**
 
-- Fully tested application
-- Complete documentation
-- Deployed production system
-- Final project presentation
+- Fully tested SaaS application
+- Complete documentation and user guides
+- Production-ready deployment with monitoring
+- Beta customer onboarding
+- Final project presentation with business metrics
+
+---
+
+## SaaS Pricing Strategy
+
+### Subscription Plans
+
+**Free Trial**
+
+- 14-day free trial
+- Up to 10 invoices
+- 1 user
+- Basic reporting
+- Email support
+
+**Starter Plan - $29/month**
+
+- Up to 100 invoices per month
+- Up to 3 users
+- Basic reporting and analytics
+- Email support
+- PDF invoice generation
+- Payment tracking
+
+**Professional Plan - $79/month**
+
+- Up to 1,000 invoices per month
+- Up to 10 users
+- Advanced reporting and analytics
+- Priority email support
+- Custom invoice templates
+- Payment gateway integration
+- Data export (CSV, PDF)
+- API access
+
+**Enterprise Plan - $199/month**
+
+- Unlimited invoices
+- Unlimited users
+- Advanced analytics and forecasting
+- Phone and email support
+- Custom branding
+- Advanced integrations
+- Dedicated account manager
+- Custom features on request
+
+### Revenue Projections
+
+**Year 1 Goals**
+
+- 50 paying customers by month 6
+- 150 paying customers by month 12
+- Average revenue per user (ARPU): $65/month
+- Monthly recurring revenue (MRR): $9,750 by year end
+
+**Growth Strategy**
+
+- Content marketing and SEO
+- Free trial conversion optimization
+- Referral program
+- Integration partnerships
+- Industry-specific marketing
 
 ---
 
@@ -536,8 +736,17 @@ GET    /api/reports/customers  - Customer performance report
 
 ## Conclusion
 
-This accounts receivable system provides a comprehensive solution for managing customer invoices, payments, and financial reporting. The 12-week roadmap ensures steady progress while building a professional-grade application that demonstrates full-stack development skills.
+Arvalox represents a comprehensive SaaS solution for accounts receivable management, designed to serve small and medium businesses through a modern, scalable platform. The 15-week roadmap ensures steady progress while building a production-ready SaaS application that demonstrates advanced full-stack development skills and business acumen.
 
-The combination of FastAPI's modern Python backend with Next.js TypeScript frontend creates a scalable, maintainable system that can grow with additional features. The focus on clean architecture, proper testing, and comprehensive documentation ensures the project meets academic standards while providing real-world business value.
+The combination of FastAPI's modern Python backend with Next.js TypeScript frontend, enhanced with multi-tenant architecture and subscription billing, creates a scalable, maintainable SaaS platform ready for real-world deployment. The focus on clean architecture, proper testing, comprehensive documentation, and business metrics ensures the project meets both academic standards and market requirements.
 
-Remember to maintain good coding practices, write comprehensive tests, and document your progress throughout the development process. This project will showcase your ability to design, implement, and deploy a complex business application using modern technologies.
+### Key Success Factors
+
+- **Technical Excellence**: Multi-tenant architecture, secure authentication, and scalable infrastructure
+- **Business Viability**: Clear pricing strategy, usage tracking, and subscription management
+- **User Experience**: Intuitive onboarding, responsive design, and comprehensive feature set
+- **Market Readiness**: Production deployment, monitoring, and customer support systems
+
+This project showcases your ability to design, implement, and deploy a complex SaaS business application using modern technologies while understanding the commercial aspects of software development. By graduation, you'll have a real business with paying customers and measurable revenue metrics.
+
+Remember to maintain good coding practices, write comprehensive tests, track business metrics, and document your progress throughout the development process. This SaaS approach transforms your final year project into a potential startup venture.
