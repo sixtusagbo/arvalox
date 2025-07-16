@@ -40,8 +40,8 @@ Every backend feature will be thoroughly tested to ensure reliability and mainta
 *Estimated Time: 1-2 weeks*
 
 #### 1.1 Initialize FastAPI Backend with Multi-Tenant Architecture
-- Set up FastAPI project structure with proper folder organization
-- Configure PostgreSQL database connection
+- Set up FastAPI proer folder organization
+- Configure PostgreSQL database connject structure with propection
 - Set up SQLAlchemy with async support
 - Implement base models with organization-based isolation
 - Create database connection and session management
