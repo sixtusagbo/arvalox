@@ -76,34 +76,6 @@ This project is well tested:
 
 **Target**: 85%+ code coverage for backend components
 
-## 📁 Project Structure
-
-```
-arvalox/
-├── backend/                 # FastAPI backend application
-│   ├── app/
-│   │   ├── api/            # API routes and endpoints
-│   │   ├── core/           # Core configuration and security
-│   │   ├── models/         # SQLAlchemy models
-│   │   ├── schemas/        # Pydantic schemas
-│   │   ├── services/       # Business logic
-│   │   └── tests/          # Test suites
-│   ├── alembic/            # Database migrations
-│   └── requirements.txt    # Python dependencies
-├── frontend/               # Next.js frontend application
-│   ├── src/
-│   │   ├── app/            # App router pages
-│   │   ├── components/     # Reusable components
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── lib/            # Utilities and configurations
-│   │   └── types/          # TypeScript type definitions
-│   └── package.json        # Node.js dependencies
-├── docs/                   # Project documentation
-│   ├── PROJECT_PLAN.md     # Comprehensive project plan
-│   └── MVP_TIMELINE.md     # Detailed MVP timeline
-└── README.md              # This file
-```
-
 ## 🚀 Getting Started
 
 ### Prerequisites

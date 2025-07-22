@@ -178,7 +178,6 @@ CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
     organization_id INTEGER REFERENCES organizations(id) ON DELETE CASCADE,
     customer_code VARCHAR(50) NOT NULL,
-    company_name VARCHAR(255) NOT NULL,
     contact_name VARCHAR(255),
     email VARCHAR(255),
     phone VARCHAR(50),
