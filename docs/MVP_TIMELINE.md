@@ -271,33 +271,72 @@ _Estimated Time: 1-2 weeks_
 
 ---
 
-### 🧪 **8. MVP Testing & Deployment**
+### 🚀 **8. CI/CD Pipeline & Infrastructure Setup**
+
+_Estimated Time: 1 week_
+
+#### 8.1 Docker Containerization
+
+- Create Dockerfile for FastAPI backend
+- Create Dockerfile for Next.js frontend
+- Set up Docker Compose for local development
+- Configure multi-stage builds for production optimization
+- **Testing**: Container build tests, local Docker Compose verification
+
+#### 8.2 GitHub Actions CI/CD Pipeline
+
+- Set up automated testing pipeline (backend + frontend)
+- Configure code quality checks (Ruff, ESLint, TypeScript)
+- Implement automated deployment to VPS on main branch
+- Add environment-specific deployment (staging/production)
+- **Testing**: CI pipeline tests, deployment automation verification
+
+#### 8.3 Ubuntu 22.04 VPS Infrastructure
+
+- Configure Ubuntu 22.04 VPS with Docker and Docker Compose
+- Set up Nginx reverse proxy with SSL certificates (Let's Encrypt)
+- Configure PostgreSQL database with automated backups
+- Set up log rotation and basic monitoring
+- Configure firewall and security hardening
+- **Testing**: Infrastructure tests, security verification, backup restoration
+
+#### 8.4 Production Environment Configuration
+
+- Set up environment-specific configuration management
+- Configure secrets management for production
+- Set up database migrations in production pipeline
+- Implement health checks and monitoring endpoints
+- **Testing**: Production deployment verification, health check tests
+
+---
+
+### 🧪 **9. MVP Testing & Final Deployment**
 
 _Estimated Time: 1-2 weeks_
 
-#### 8.1 Unit & Integration Testing
+#### 9.1 Unit & Integration Testing
 
 - Complete backend test suite with 85%+ coverage
 - Test all API endpoints and business logic
 - Verify multi-tenant data isolation
 - **Testing**: Comprehensive test suite completion
 
-#### 8.2 Frontend Component Testing
+#### 9.2 Frontend Component Testing
 
 - Test React components and user workflows
 - Implement end-to-end testing scenarios
 - Test responsive design and accessibility
 - **Testing**: Frontend test suite completion
 
-#### 8.3 Basic Production Deployment
+#### 9.3 Production Deployment Verification
 
-- Deploy backend to Railway/Heroku
-- Deploy frontend to Vercel
-- Set up production database
-- Configure environment variables
-- **Testing**: Deployment verification tests, production smoke tests
+- Deploy MVP to Ubuntu 22.04 VPS using CI/CD pipeline
+- Verify all features work in production environment
+- Test SSL certificates and security configurations
+- Validate database backups and recovery procedures
+- **Testing**: Production deployment verification, end-to-end production tests
 
-#### 8.4 Documentation & User Guide
+#### 9.4 Documentation & User Guide
 
 - Create comprehensive API documentation
 - Write user manual and onboarding guide
