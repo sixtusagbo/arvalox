@@ -16,13 +16,17 @@ class User(BaseModel):
     __tablename__ = "users"
 
     organization_id = Column(
-        Integer, ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+        Integer,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
     )
     email = Column(String(255), nullable=False)
-    password_hash = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    role = Column(String(50), nullable=False)  # owner, admin, accountant, sales_rep
+    role = Column(
+        String(50), nullable=False
+    )  # owner, admin, accountant, sales_rep
     is_active = Column(Boolean, default=True)
     invited_at = Column(DateTime(timezone=True))
     joined_at = Column(DateTime(timezone=True))
