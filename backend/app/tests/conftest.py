@@ -7,7 +7,6 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
-    async_sessionmaker,
     create_async_engine,
 )
 
@@ -15,22 +14,29 @@ from app.core.config import settings
 from app.core.database import Base, get_db
 from app.main import app
 
-# Test database engine
-test_engine = create_async_engine(
-    settings.test_database_url
-    or settings.database_url.replace("arvalox_dev", "arvalox_test"),
-    echo=False,
-    poolclass=None,  # Disable connection pooling for tests
-)
 
-TestSessionLocal = async_sessionmaker(
-    test_engine, class_=AsyncSession, expire_on_commit=False
-)
+@pytest_asyncio.fixture(scope="function")
+async def test_engine():
+    """Create test database engine for each test"""
+    engine = create_async_engine(
+        settings.test_database_url
+        or settings.database_url.replace("arvalox_dev", "arvalox_test"),
+        echo=False,
+        pool_pre_ping=True,
+        pool_recycle=300,
+        connect_args={
+            "server_settings": {
+                "application_name": "arvalox_test",
+            }
+        },
+    )
+    yield engine
+    await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="session")
-async def setup_test_db():
-    """Set up test database schema once per session"""
+@pytest_asyncio.fixture(scope="function")
+async def setup_test_db(test_engine):
+    """Set up test database schema for each test"""
     async with test_engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
     yield
@@ -39,19 +45,26 @@ async def setup_test_db():
 
 
 @pytest_asyncio.fixture(scope="function")
-async def db_session(setup_test_db) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(
+    test_engine, setup_test_db
+) -> AsyncGenerator[AsyncSession, None]:
     """Create a fresh database session for each test"""
-    async with TestSessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.rollback()
-            await session.close()
+    connection = await test_engine.connect()
+    transaction = await connection.begin()
+
+    session = AsyncSession(bind=connection, expire_on_commit=False)
+
+    try:
+        yield session
+    finally:
+        await session.close()
+        await transaction.rollback()
+        await connection.close()
 
 
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    def get_test_db():
+    async def get_test_db():
         yield db_session
 
     app.dependency_overrides[get_db] = get_test_db
