@@ -4,7 +4,7 @@
 
 ### Project Overview
 
-A comprehensive Software-as-a-Service (SaaS) accounts receivable management platform built with Python FastAPI backend and Next.js TypeScript frontend. This multi-tenant system will serve small to medium businesses with subscription-based pricing, enabling them to manage customer invoicing, payment tracking, and financial reporting through a modern web application.
+A comprehensive Software-as-a-Service (SaaS) accounts receivable management platform built with Python FastAPI backend and Next.js TypeScript frontend. This multi-tenant system will serve businesses with subscription-based pricing, enabling them to manage customer invoicing, payment tracking, and financial reporting through a modern web application.
 
 ### Technology Stack
 
@@ -735,7 +735,7 @@ GET    /api/reports/customers  - Customer performance report
 
 ## Conclusion
 
-Arvalox represents a comprehensive SaaS solution for accounts receivable management, designed to serve small and medium businesses through a modern, scalable platform. The 15-week roadmap ensures steady progress while building a production-ready SaaS application that demonstrates advanced full-stack development skills and business acumen.
+Arvalox represents a comprehensive SaaS solution for accounts receivable management, designed to serve businesses through a modern, scalable platform. The 15-week roadmap ensures steady progress while building a production-ready SaaS application that demonstrates advanced full-stack development skills and business acumen.
 
 The combination of FastAPI's modern Python backend with Next.js TypeScript frontend, enhanced with multi-tenant architecture and subscription billing, creates a scalable, maintainable SaaS platform ready for real-world deployment. The focus on clean architecture, proper testing, comprehensive documentation, and business metrics ensures the project meets both academic standards and market requirements.
 

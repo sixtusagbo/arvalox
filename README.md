@@ -1,6 +1,6 @@
 # Arvalox - SaaS Accounts Receivable Management Platform
 
-> **My Final Year Project** - A comprehensive Software-as-a-Service (SaaS) platform for managing accounts receivable, built with modern technologies and designed for small to medium businesses.
+> **My Final Year Project** - A comprehensive Software-as-a-Service (SaaS) platform for managing accounts receivable, built with modern technologies and designed for businesses.
 
 ## 🚀 Project Overview
 
