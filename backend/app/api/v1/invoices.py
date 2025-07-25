@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy import and_, desc, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -12,7 +13,9 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.customer import Customer
 from app.models.invoice import Invoice, InvoiceItem
+from app.models.organization import Organization
 from app.models.user import User
+from app.services.pdf_service import InvoicePDFService
 from app.schemas.invoice import (
     InvoiceCreate,
     InvoiceListResponse,
@@ -540,3 +543,70 @@ async def generate_invoice_number(
     next_number = f"{prefix}-{current_year}-{sequence:04d}"
 
     return {"invoice_number": next_number}
+
+
+@router.get("/{invoice_id}/pdf")
+async def download_invoice_pdf(
+    invoice_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Download invoice as PDF"""
+
+    # Get invoice with items and customer
+    invoice_query = (
+        select(Invoice)
+        .options(
+            selectinload(Invoice.items),
+            selectinload(Invoice.customer),
+        )
+        .where(
+            and_(
+                Invoice.id == invoice_id,
+                Invoice.organization_id == current_user.organization_id,
+            )
+        )
+    )
+
+    result = await db.execute(invoice_query)
+    invoice = result.scalar_one_or_none()
+
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    # Get organization
+    org_result = await db.execute(
+        select(Organization).where(
+            Organization.id == current_user.organization_id
+        )
+    )
+    organization = org_result.scalar_one_or_none()
+
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Prepare customer data
+    customer_data = {
+        "contact_name": invoice.customer.contact_name,
+        "billing_address": invoice.customer.billing_address,
+        "email": invoice.customer.email,
+        "phone": invoice.customer.phone,
+    }
+
+    # Generate PDF
+    pdf_service = InvoicePDFService()
+    pdf_content = pdf_service.generate_invoice_pdf(
+        invoice=invoice, organization=organization, customer_data=customer_data
+    )
+
+    # Return PDF response
+    filename = f"invoice_{invoice.invoice_number}.pdf"
+
+    return Response(
+        content=pdf_content,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Content-Type": "application/pdf",
+        },
+    )

@@ -58,7 +58,7 @@ class TestInvoiceSchemas:
         """Test valid invoice creation schema"""
         today = date.today()
         due_date = today + timedelta(days=30)
-        
+
         invoice_data = {
             "invoice_number": "INV-2024-0001",
             "customer_id": 1,
@@ -85,7 +85,7 @@ class TestInvoiceSchemas:
         """Test invoice creation with due date before invoice date"""
         today = date.today()
         yesterday = today - timedelta(days=1)
-        
+
         invoice_data = {
             "invoice_number": "INV-2024-0001",
             "customer_id": 1,
@@ -107,7 +107,7 @@ class TestInvoiceSchemas:
         """Test invoice creation with no items"""
         today = date.today()
         due_date = today + timedelta(days=30)
-        
+
         invoice_data = {
             "invoice_number": "INV-2024-0001",
             "customer_id": 1,
@@ -123,7 +123,7 @@ class TestInvoiceSchemas:
         """Test invoice creation with invalid status"""
         today = date.today()
         due_date = today + timedelta(days=30)
-        
+
         invoice_data = {
             "invoice_number": "INV-2024-0001",
             "customer_id": 1,
@@ -158,7 +158,7 @@ class TestInvoiceSchemas:
         """Test invoice response schema"""
         today = date.today()
         now = datetime.now()
-        
+
         response_data = {
             "id": 1,
             "organization_id": 1,
@@ -187,7 +187,7 @@ class TestInvoiceSchemas:
         """Test invoice search parameters validation"""
         today = date.today()
         tomorrow = today + timedelta(days=1)
-        
+
         valid_params = {
             "search": "INV-2024",
             "status": "sent",
@@ -212,7 +212,7 @@ class TestInvoiceSchemas:
         """Test invoice search with invalid date range"""
         today = date.today()
         yesterday = today - timedelta(days=1)
-        
+
         invalid_params = {
             "date_from": today,
             "date_to": yesterday,  # Before start date
@@ -234,14 +234,14 @@ class TestInvoiceSchemas:
     def test_invoice_status_update_schema(self):
         """Test invoice status update schema"""
         status_data = {"status": "sent"}
-        
+
         status_update = InvoiceStatusUpdate(**status_data)
         assert status_update.status == "sent"
 
     def test_invoice_status_update_invalid(self):
         """Test invoice status update with invalid status"""
         status_data = {"status": "invalid_status"}
-        
+
         with pytest.raises(ValueError):
             InvoiceStatusUpdate(**status_data)
 
@@ -285,10 +285,10 @@ class TestInvoiceBusinessLogic:
         prefix = "INV"
         year = 2024
         sequence = 1
-        
+
         expected = f"{prefix}-{year}-{sequence:04d}"
         assert expected == "INV-2024-0001"
-        
+
         # Test sequence increment
         sequence = 42
         expected = f"{prefix}-{year}-{sequence:04d}"
@@ -301,10 +301,10 @@ class TestInvoiceBusinessLogic:
             {"quantity": Decimal("1.50"), "unit_price": Decimal("200.00")},
             {"quantity": Decimal("3.00"), "unit_price": Decimal("50.00")},
         ]
-        
+
         subtotal = sum(item["quantity"] * item["unit_price"] for item in items)
         expected_subtotal = Decimal("650.00")  # 200 + 300 + 150
-        
+
         assert subtotal == expected_subtotal
 
     def test_invoice_status_transitions(self):
@@ -316,12 +316,12 @@ class TestInvoiceBusinessLogic:
             "paid": [],
             "cancelled": [],
         }
-        
+
         # Test valid transitions
         assert "sent" in valid_transitions["draft"]
         assert "paid" in valid_transitions["sent"]
         assert "paid" in valid_transitions["overdue"]
-        
+
         # Test invalid transitions
         assert "draft" not in valid_transitions["paid"]
         assert "sent" not in valid_transitions["cancelled"]
@@ -331,14 +331,14 @@ class TestInvoiceBusinessLogic:
         today = date.today()
         yesterday = today - timedelta(days=1)
         tomorrow = today + timedelta(days=1)
-        
+
         # Invoice due yesterday with sent status should be overdue
         overdue_statuses = ["sent", "overdue"]
-        
+
         # Test overdue conditions
         assert yesterday < today  # Due date in past
         assert "sent" in overdue_statuses  # Valid status for overdue
-        
+
         # Test not overdue conditions
         assert tomorrow > today  # Due date in future
         assert "paid" not in overdue_statuses  # Paid invoices not overdue
@@ -350,12 +350,13 @@ class TestInvoiceAPIStructure:
     def test_invoice_api_import(self):
         """Test that invoice API can be imported successfully"""
         from app.api.v1.invoices import router
+
         assert router is not None
 
     def test_invoice_api_routes_exist(self):
         """Test that invoice API routes are properly defined"""
         from app.api.v1.invoices import router
-        
+
         # Check that routes are defined
         routes = [route.path for route in router.routes]
         assert "/" in routes  # List/Create invoices
@@ -367,13 +368,13 @@ class TestInvoiceAPIStructure:
     def test_invoice_api_methods(self):
         """Test that invoice API has correct HTTP methods"""
         from app.api.v1.invoices import router
-        
+
         # Get all route methods
         all_methods = []
         for route in router.routes:
-            if hasattr(route, 'methods'):
+            if hasattr(route, "methods"):
                 all_methods.extend(route.methods)
-        
+
         # Check that CRUD methods are available
         assert "GET" in all_methods
         assert "POST" in all_methods
@@ -384,24 +385,28 @@ class TestInvoiceAPIStructure:
     def test_invoice_api_in_main_router(self):
         """Test that invoice API is included in main router"""
         from app.api.v1.api import api_router
-        
+
         # Check that invoice routes are included
         invoice_routes_found = False
         for route in api_router.routes:
-            if hasattr(route, 'path_regex') and 'invoices' in str(route.path_regex):
+            if hasattr(route, "path_regex") and "invoices" in str(
+                route.path_regex
+            ):
                 invoice_routes_found = True
                 break
-        
-        assert invoice_routes_found, "Invoice routes not found in main API router"
+
+        assert invoice_routes_found, (
+            "Invoice routes not found in main API router"
+        )
 
     def test_invoice_schemas_integration(self):
         """Test that invoice schemas work with API"""
         from app.schemas.invoice import InvoiceCreate, InvoiceResponse
-        
+
         # Test that schemas can be used for API serialization
         today = date.today()
         due_date = today + timedelta(days=30)
-        
+
         invoice_data = {
             "invoice_number": "TEST-001",
             "customer_id": 1,
@@ -416,7 +421,7 @@ class TestInvoiceAPIStructure:
                 }
             ],
         }
-        
+
         # Should be able to create and validate
         invoice_create = InvoiceCreate(**invoice_data)
         assert invoice_create.invoice_number == "TEST-001"
@@ -424,16 +429,138 @@ class TestInvoiceAPIStructure:
     def test_invoice_model_integration(self):
         """Test that invoice model can be imported and used"""
         from app.models.invoice import Invoice, InvoiceItem
-        
+
         # Should be able to access model attributes
-        assert hasattr(Invoice, 'invoice_number')
-        assert hasattr(Invoice, 'customer_id')
-        assert hasattr(Invoice, 'organization_id')
-        assert hasattr(Invoice, 'status')
-        assert hasattr(Invoice, 'total_amount')
-        
+        assert hasattr(Invoice, "invoice_number")
+        assert hasattr(Invoice, "customer_id")
+        assert hasattr(Invoice, "organization_id")
+        assert hasattr(Invoice, "status")
+        assert hasattr(Invoice, "total_amount")
+
         # Should be able to access invoice item attributes
-        assert hasattr(InvoiceItem, 'description')
-        assert hasattr(InvoiceItem, 'quantity')
-        assert hasattr(InvoiceItem, 'unit_price')
-        assert hasattr(InvoiceItem, 'line_total')
+        assert hasattr(InvoiceItem, "description")
+        assert hasattr(InvoiceItem, "quantity")
+        assert hasattr(InvoiceItem, "unit_price")
+        assert hasattr(InvoiceItem, "line_total")
+
+
+class TestInvoicePDFService:
+    """Test invoice PDF generation service"""
+
+    def test_pdf_service_import(self):
+        """Test that PDF service can be imported"""
+        from app.services.pdf_service import InvoicePDFService
+
+        service = InvoicePDFService()
+        assert service is not None
+        assert hasattr(service, "generate_invoice_pdf")
+
+    def test_pdf_service_initialization(self):
+        """Test PDF service initialization"""
+        from app.services.pdf_service import InvoicePDFService
+
+        service = InvoicePDFService()
+
+        # Check that styles are set up
+        assert hasattr(service, "styles")
+        assert hasattr(service, "page_size")
+        assert hasattr(service, "margin")
+
+        # Check custom styles are added
+        assert "CompanyName" in service.styles
+        assert "InvoiceTitle" in service.styles
+        assert "SectionHeader" in service.styles
+        assert "Address" in service.styles
+        assert "Total" in service.styles
+
+    def test_pdf_service_methods_exist(self):
+        """Test that PDF service has all required methods"""
+        from app.services.pdf_service import InvoicePDFService
+
+        service = InvoicePDFService()
+
+        # Check that all private methods exist
+        assert hasattr(service, "_setup_custom_styles")
+        assert hasattr(service, "_build_header")
+        assert hasattr(service, "_build_bill_to_section")
+        assert hasattr(service, "_build_invoice_details")
+        assert hasattr(service, "_build_line_items_table")
+        assert hasattr(service, "_build_totals_section")
+        assert hasattr(service, "_build_notes_section")
+        assert hasattr(service, "_build_footer")
+
+    def test_pdf_generation_mock_data(self):
+        """Test PDF generation with mock data"""
+        from app.services.pdf_service import InvoicePDFService
+        from datetime import date, datetime
+        from decimal import Decimal
+
+        # Create mock invoice object
+        class MockInvoiceItem:
+            def __init__(self, description, quantity, unit_price):
+                self.description = description
+                self.quantity = Decimal(str(quantity))
+                self.unit_price = Decimal(str(unit_price))
+                self.line_total = self.quantity * self.unit_price
+
+        class MockInvoice:
+            def __init__(self):
+                self.invoice_number = "INV-2024-0001"
+                self.invoice_date = date.today()
+                self.due_date = date.today()
+                self.status = "draft"
+                self.subtotal = Decimal("1000.00")
+                self.tax_amount = Decimal("100.00")
+                self.total_amount = Decimal("1100.00")
+                self.paid_amount = Decimal("0.00")
+                self.notes = "Test invoice notes"
+                self.items = [
+                    MockInvoiceItem("Web Development", 10, 100.00),
+                    MockInvoiceItem("Consulting", 5, 200.00),
+                ]
+
+        class MockOrganization:
+            def __init__(self):
+                self.name = "Test Company"
+                self.email = "test@company.com"
+
+        # Create service and generate PDF
+        service = InvoicePDFService()
+        invoice = MockInvoice()
+        organization = MockOrganization()
+        customer_data = {
+            "contact_name": "Test Customer",
+            "billing_address": "123 Test St",
+            "email": "customer@test.com",
+            "phone": "555-1234",
+        }
+
+        # Generate PDF
+        pdf_content = service.generate_invoice_pdf(
+            invoice=invoice,
+            organization=organization,
+            customer_data=customer_data,
+        )
+
+        # Check that PDF content is generated
+        assert pdf_content is not None
+        assert isinstance(pdf_content, bytes)
+        assert len(pdf_content) > 0
+
+        # Check PDF header (should start with %PDF)
+        assert pdf_content.startswith(b"%PDF")
+
+    def test_pdf_api_endpoint_structure(self):
+        """Test that PDF API endpoint is properly defined"""
+        from app.api.v1.invoices import router
+
+        # Check that PDF route exists
+        pdf_routes = [route for route in router.routes if "pdf" in route.path]
+        assert len(pdf_routes) > 0
+
+        # Check that the route has the correct path
+        pdf_route = pdf_routes[0]
+        assert "/{invoice_id}/pdf" in pdf_route.path
+
+        # Check that it's a GET method
+        assert "GET" in pdf_route.methods
