@@ -2,6 +2,58 @@
 
 > **My Final Year Project** - A comprehensive Software-as-a-Service (SaaS) platform for managing accounts receivable, built with modern technologies and designed for businesses.
 
+## 📑 Table of Contents
+
+- [What This Project Actually Does](#what-this-project-actually-does)
+- [🚀 Project Overview](#-project-overview)
+- [🎯 Key Features](#-key-features)
+- [🛠️ Technology Stack](#️-technology-stack)
+- [📋 Project Status](#-project-status)
+- [🧪 Testing Strategy](#-testing-strategy)
+- [🚀 Getting Started](#-getting-started)
+- [📊 Subscription Plans](#-subscription-plans)
+- [🎓 Academic Context](#-academic-context)
+- [📈 Business Potential](#-business-potential-potential)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
+- [📞 Contact](#-contact)
+
+## What This Project Actually Does
+
+Imagine you run a small business - let's say you sell custom t-shirts.
+
+### The Problem:
+
+- You make t-shirts for customers
+- You send them bills (invoices)
+- Some customers pay immediately, others pay late, some forget to pay
+- You lose track of who owes you money
+- You can't easily see how much money people owe you total
+
+### What My App Does:
+
+- **Customer List** - Keep track of all my customers (names, emails, addresses)
+- **Make Bills** - Create professional invoices like "Hey John, you owe me $50 for those 5 t-shirts"
+- **Track Payments** - When John pays $25, you record it. Now he only owes $25.
+- **See Who's Late** - Show you "Sarah owes $100 and it's been 45 days - call her!"
+- **Reports** - Tell you "This month you're owed $2,500 total, and $800 of that is overdue"
+
+### In Even Simpler Terms:
+
+It's like a digital notebook that helps businesses:
+
+- Remember who owes them money
+- Send professional bills
+- Track when people pay
+- Know who's paying late
+- See their money situation at a glance
+
+### Real World Example:
+
+Instead of using messy Excel sheets or paper notebooks to track "John owes me $50, Sarah paid $30, Mike is 2 months late with $200" - you have a clean, professional app that does it all automatically.
+
+**That's it! It's basically a "Who Owes Me Money" tracker for businesses!** 😄
+
 ## 🚀 Project Overview
 
 Arvalox is a multi-tenant SaaS platform that enables businesses to efficiently manage their accounts receivable operations. From invoice creation and payment tracking to comprehensive financial reporting, Arvalox provides all the tools needed to streamline receivables management.
@@ -46,7 +98,7 @@ Arvalox is a multi-tenant SaaS platform that enables businesses to efficiently m
 ### MVP Features (Phase 1)
 
 - [x] Project planning and architecture design
-- [ ] Multi-tenant backend setup
+- [x] Multi-tenant backend setup
 - [ ] Authentication and organization management
 - [ ] Basic subscription system
 - [ ] Customer management
@@ -113,41 +165,9 @@ cd backend
 alembic upgrade head
 ```
 
-## 📊 Subscription Plans
-
-### Free Trial
-
-- 14-day trial period
-- Up to 10 invoices
-- 1 user
-- Basic reporting
-
-### Starter Plan - $29/month
-
-- Up to 100 invoices/month
-- Up to 3 users
-- PDF generation
-- Email support
-
-### Professional Plan - $79/month
-
-- Up to 1,000 invoices/month
-- Up to 10 users
-- Advanced reporting
-- Priority support
-- Data export
-
-### Enterprise Plan - $199/month
-
-- Unlimited invoices
-- Unlimited users
-- Custom branding
-- Phone support
-- API access
-
 ## 🎓 Academic Context
 
-This project serves as a **Final Year Project** demonstrating:
+This project serves as my **Final Year Project** demonstrating:
 
 - **Full-Stack Development** - Modern web technologies
 - **Software Architecture** - Multi-tenant SaaS design
@@ -175,10 +195,6 @@ This is my final year project, but feedback and suggestions are welcome:
 3. Make your changes
 4. Add tests for new functionality
 5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 📞 Contact
 
