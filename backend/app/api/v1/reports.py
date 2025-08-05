@@ -18,11 +18,18 @@ from app.schemas.aging_report import (
 )
 from app.services.aging_report_service import AgingReportService
 from app.services.dashboard_service import DashboardService
+from app.services.export_service import ExportService
 from app.schemas.dashboard import (
     DashboardOverview,
     DashboardParams,
     KPISummary,
     QuickStats,
+)
+from app.schemas.export import (
+    AgingReportExportParams,
+    PaymentHistoryExportParams,
+    DashboardExportParams,
+    ExportResponse,
 )
 
 router = APIRouter()
@@ -479,3 +486,176 @@ async def get_recent_activity(
     )
 
     return recent_activity
+
+
+@router.get("/export/aging-report")
+async def export_aging_report(
+    format: str = Query(
+        "csv", pattern="^(csv|pdf)$", description="Export format"
+    ),
+    customer_id: Optional[int] = Query(
+        None, gt=0, description="Filter by specific customer"
+    ),
+    include_paid: bool = Query(
+        False, description="Include fully paid invoices"
+    ),
+    as_of_date: Optional[date] = Query(
+        None, description="Date to calculate aging as of"
+    ),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Export aging report in specified format"""
+
+    export_service = ExportService(db)
+
+    if format == "csv":
+        content = await export_service.export_aging_report_csv(
+            organization_id=current_user.organization_id,
+            as_of_date=as_of_date,
+            customer_id=customer_id,
+            include_paid=include_paid,
+        )
+    elif format == "pdf":
+        content = await export_service.export_aging_report_pdf(
+            organization_id=current_user.organization_id,
+            as_of_date=as_of_date,
+            customer_id=customer_id,
+            include_paid=include_paid,
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported format")
+
+    filename = export_service.get_export_filename(
+        "aging_report", format, current_user.organization_id
+    )
+    content_type = export_service.get_content_type(format)
+
+    from fastapi.responses import Response
+
+    return Response(
+        content=content,
+        media_type=content_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/export/payment-history")
+async def export_payment_history(
+    format: str = Query(
+        "csv", pattern="^(csv|pdf)$", description="Export format"
+    ),
+    customer_id: Optional[int] = Query(
+        None, gt=0, description="Filter by specific customer"
+    ),
+    date_from: Optional[date] = Query(
+        None, description="Start date for export"
+    ),
+    date_to: Optional[date] = Query(None, description="End date for export"),
+    limit: int = Query(
+        1000, ge=1, le=10000, description="Maximum records to export"
+    ),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Export payment history in specified format"""
+
+    export_service = ExportService(db)
+
+    if format == "csv":
+        content = await export_service.export_payment_history_csv(
+            organization_id=current_user.organization_id,
+            customer_id=customer_id,
+            date_from=date_from,
+            date_to=date_to,
+            limit=limit,
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="PDF export not yet supported for payment history",
+        )
+
+    filename = export_service.get_export_filename(
+        "payment_history", format, current_user.organization_id
+    )
+    content_type = export_service.get_content_type(format)
+
+    from fastapi.responses import Response
+
+    return Response(
+        content=content,
+        media_type=content_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/export/dashboard")
+async def export_dashboard_data(
+    format: str = Query(
+        "csv", pattern="^(csv|pdf)$", description="Export format"
+    ),
+    date_from: Optional[date] = Query(
+        None, description="Start date for export"
+    ),
+    date_to: Optional[date] = Query(None, description="End date for export"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Export dashboard data in specified format"""
+
+    export_service = ExportService(db)
+
+    if format == "csv":
+        content = await export_service.export_dashboard_data_csv(
+            organization_id=current_user.organization_id,
+            date_from=date_from,
+            date_to=date_to,
+        )
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="PDF export not yet supported for dashboard data",
+        )
+
+    filename = export_service.get_export_filename(
+        "dashboard", format, current_user.organization_id
+    )
+    content_type = export_service.get_content_type(format)
+
+    from fastapi.responses import Response
+
+    return Response(
+        content=content,
+        media_type=content_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.get("/export/formats", response_model=dict)
+async def get_supported_export_formats():
+    """Get list of supported export formats"""
+
+    return {
+        "formats": [
+            {
+                "format": "csv",
+                "name": "CSV (Comma Separated Values)",
+                "description": "Spreadsheet-compatible format",
+                "supported_exports": [
+                    "aging_report",
+                    "payment_history",
+                    "dashboard",
+                    "invoices",
+                    "customers",
+                ],
+            },
+            {
+                "format": "pdf",
+                "name": "PDF (Portable Document Format)",
+                "description": "Formatted report for printing",
+                "supported_exports": ["aging_report"],
+            },
+        ],
+        "default_format": "csv",
+    }
