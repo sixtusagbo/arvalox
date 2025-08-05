@@ -22,7 +22,9 @@ from app.schemas.payment import (
     PaymentSummary,
     PaymentUpdate,
     InvoicePaymentSummary,
+    PaymentAllocationCreate,
 )
+from app.services.payment_allocation_service import PaymentAllocationService
 
 router = APIRouter()
 
@@ -497,3 +499,106 @@ async def get_invoice_payment_summary(
         payment_count=payment_count,
         last_payment_date=last_payment_date,
     )
+
+
+@router.post("/allocate", response_model=dict)
+async def allocate_payment(
+    payment_data: PaymentAllocationCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Allocate a payment across multiple invoices"""
+
+    allocation_service = PaymentAllocationService(db)
+
+    try:
+        payment, allocation_details = await allocation_service.allocate_payment(
+            organization_id=current_user.organization_id,
+            user_id=current_user.id,
+            payment_data=payment_data,
+        )
+
+        return {
+            "message": "Payment allocated successfully",
+            "primary_payment_id": payment.id,
+            "total_amount": payment_data.amount,
+            "allocations": allocation_details,
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/auto-allocate", response_model=dict)
+async def auto_allocate_payment(
+    payment_amount: Decimal = Query(..., gt=0, description="Payment amount"),
+    payment_method: str = Query(
+        ..., pattern="^(cash|check|bank_transfer|credit_card|online)$"
+    ),
+    payment_date: date = Query(..., description="Payment date"),
+    reference_number: Optional[str] = Query(
+        None, description="Reference number"
+    ),
+    notes: Optional[str] = Query(None, description="Payment notes"),
+    customer_id: Optional[int] = Query(
+        None, gt=0, description="Limit to specific customer"
+    ),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Automatically allocate a payment to outstanding invoices"""
+
+    allocation_service = PaymentAllocationService(db)
+
+    try:
+        (
+            payments,
+            allocation_details,
+        ) = await allocation_service.auto_allocate_payment(
+            organization_id=current_user.organization_id,
+            user_id=current_user.id,
+            payment_amount=payment_amount,
+            payment_method=payment_method,
+            payment_date=payment_date,
+            reference_number=reference_number,
+            notes=notes,
+            customer_id=customer_id,
+        )
+
+        return {
+            "message": "Payment auto-allocated successfully",
+            "payment_count": len(payments),
+            "total_amount": payment_amount,
+            "allocations": allocation_details,
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/allocation-suggestions", response_model=dict)
+async def get_allocation_suggestions(
+    payment_amount: Decimal = Query(..., gt=0, description="Payment amount"),
+    customer_id: Optional[int] = Query(
+        None, gt=0, description="Limit to specific customer"
+    ),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get suggested allocation for a payment amount"""
+
+    allocation_service = PaymentAllocationService(db)
+
+    suggestions = await allocation_service.get_allocation_suggestions(
+        organization_id=current_user.organization_id,
+        payment_amount=payment_amount,
+        customer_id=customer_id,
+    )
+
+    return {
+        "payment_amount": payment_amount,
+        "suggestions": suggestions,
+        "total_suggested": sum(
+            s.get("suggested_allocation", 0) for s in suggestions
+        ),
+    }
