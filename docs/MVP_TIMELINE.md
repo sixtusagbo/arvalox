@@ -291,9 +291,9 @@ _Estimated Time: 1 week_
 - Add environment-specific deployment (staging/production)
 - **Testing**: CI pipeline tests, deployment automation verification
 
-#### 8.3 Ubuntu VPS Infrastructure
+#### 8.3 Deployment Infrastructure
 
-- Configure Ubuntu VPS with Docker and Docker Compose
+- Configure server with Docker and Docker Compose
 - Set up Nginx reverse proxy with SSL certificates (Let's Encrypt)
 - Configure PostgreSQL database with automated backups
 - Set up log rotation and basic monitoring
