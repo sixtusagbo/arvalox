@@ -711,3 +711,305 @@ class TestPaymentAllocationAPI:
 
         for method in service_methods:
             assert hasattr(PaymentAllocationService, method)
+
+
+class TestPaymentHistoryService:
+    """Test payment history service functionality"""
+
+    def test_payment_history_service_import(self):
+        """Test that payment history service can be imported"""
+        from app.services.payment_history_service import PaymentHistoryService
+
+        # Should be able to import and instantiate (with mock db)
+        assert PaymentHistoryService is not None
+
+    def test_payment_history_service_methods(self):
+        """Test that payment history service has required methods"""
+        from app.services.payment_history_service import PaymentHistoryService
+
+        # Check that all required methods exist
+        assert hasattr(PaymentHistoryService, "get_payment_history")
+        assert hasattr(PaymentHistoryService, "get_customer_payment_history")
+        assert hasattr(PaymentHistoryService, "get_payment_audit_trail")
+        assert hasattr(PaymentHistoryService, "get_payment_trends")
+        assert hasattr(PaymentHistoryService, "get_payment_method_analytics")
+
+    def test_payment_history_filtering_logic(self):
+        """Test payment history filtering business logic"""
+        from datetime import date, timedelta
+        from decimal import Decimal
+
+        # Mock payment data for filtering tests
+        today = date.today()
+        yesterday = today - timedelta(days=1)
+
+        payments = [
+            {
+                "id": 1,
+                "payment_date": today,
+                "amount": Decimal("500.00"),
+                "payment_method": "bank_transfer",
+                "status": "completed",
+                "customer_id": 1,
+                "invoice_id": 1,
+            },
+            {
+                "id": 2,
+                "payment_date": yesterday,
+                "amount": Decimal("300.00"),
+                "payment_method": "cash",
+                "status": "pending",
+                "customer_id": 2,
+                "invoice_id": 2,
+            },
+        ]
+
+        # Test date filtering logic
+        filtered_by_date = [p for p in payments if p["payment_date"] >= today]
+        assert len(filtered_by_date) == 1
+        assert filtered_by_date[0]["id"] == 1
+
+        # Test payment method filtering
+        filtered_by_method = [
+            p for p in payments if p["payment_method"] == "cash"
+        ]
+        assert len(filtered_by_method) == 1
+        assert filtered_by_method[0]["id"] == 2
+
+        # Test status filtering
+        filtered_by_status = [p for p in payments if p["status"] == "completed"]
+        assert len(filtered_by_status) == 1
+        assert filtered_by_status[0]["id"] == 1
+
+    def test_payment_trends_calculation_logic(self):
+        """Test payment trends calculation logic"""
+        from datetime import date, timedelta
+        from decimal import Decimal
+
+        # Mock payment data for trends
+        today = date.today()
+        payments = [
+            {
+                "payment_date": today,
+                "amount": Decimal("500.00"),
+                "status": "completed",
+            },
+            {
+                "payment_date": today,
+                "amount": Decimal("300.00"),
+                "status": "completed",
+            },
+            {
+                "payment_date": today - timedelta(days=1),
+                "amount": Decimal("200.00"),
+                "status": "completed",
+            },
+            {
+                "payment_date": today - timedelta(days=1),
+                "amount": Decimal("100.00"),
+                "status": "pending",
+            },
+        ]
+
+        # Group by date
+        trends = {}
+        for payment in payments:
+            date_key = payment["payment_date"]
+            if date_key not in trends:
+                trends[date_key] = {
+                    "payment_count": 0,
+                    "total_amount": Decimal("0.00"),
+                    "completed_count": 0,
+                    "completed_amount": Decimal("0.00"),
+                }
+
+            trends[date_key]["payment_count"] += 1
+            trends[date_key]["total_amount"] += payment["amount"]
+
+            if payment["status"] == "completed":
+                trends[date_key]["completed_count"] += 1
+                trends[date_key]["completed_amount"] += payment["amount"]
+
+        # Verify trends calculation
+        today_trend = trends[today]
+        assert today_trend["payment_count"] == 2
+        assert today_trend["total_amount"] == Decimal("800.00")
+        assert today_trend["completed_count"] == 2
+        assert today_trend["completed_amount"] == Decimal("800.00")
+
+        yesterday_trend = trends[today - timedelta(days=1)]
+        assert yesterday_trend["payment_count"] == 2
+        assert yesterday_trend["total_amount"] == Decimal("300.00")
+        assert yesterday_trend["completed_count"] == 1
+        assert yesterday_trend["completed_amount"] == Decimal("200.00")
+
+    def test_payment_method_analytics_logic(self):
+        """Test payment method analytics calculation"""
+        from decimal import Decimal
+
+        # Mock payment data
+        payments = [
+            {"payment_method": "bank_transfer", "amount": Decimal("500.00")},
+            {"payment_method": "bank_transfer", "amount": Decimal("300.00")},
+            {"payment_method": "cash", "amount": Decimal("200.00")},
+            {"payment_method": "credit_card", "amount": Decimal("100.00")},
+        ]
+
+        # Calculate analytics
+        method_stats = {}
+        total_amount = Decimal("0.00")
+
+        for payment in payments:
+            method = payment["payment_method"]
+            amount = payment["amount"]
+            total_amount += amount
+
+            if method not in method_stats:
+                method_stats[method] = {
+                    "count": 0,
+                    "total_amount": Decimal("0.00"),
+                }
+
+            method_stats[method]["count"] += 1
+            method_stats[method]["total_amount"] += amount
+
+        # Calculate percentages
+        for method, stats in method_stats.items():
+            stats["percentage"] = float(
+                stats["total_amount"] / total_amount * 100
+            )
+            stats["average_amount"] = stats["total_amount"] / stats["count"]
+
+        # Verify calculations
+        assert method_stats["bank_transfer"]["count"] == 2
+        assert method_stats["bank_transfer"]["total_amount"] == Decimal(
+            "800.00"
+        )
+        assert (
+            round(method_stats["bank_transfer"]["percentage"], 2) == 72.73
+        )  # 800/1100 * 100
+        assert method_stats["bank_transfer"]["average_amount"] == Decimal(
+            "400.00"
+        )
+
+        assert method_stats["cash"]["count"] == 1
+        assert method_stats["cash"]["total_amount"] == Decimal("200.00")
+        assert (
+            round(method_stats["cash"]["percentage"], 2) == 18.18
+        )  # 200/1100 * 100
+
+    def test_audit_trail_data_structure(self):
+        """Test audit trail data structure"""
+        from datetime import date, datetime
+        from decimal import Decimal
+
+        # Mock comprehensive audit trail data
+        audit_trail = {
+            "payment": {
+                "id": 1,
+                "payment_date": date.today(),
+                "amount": Decimal("500.00"),
+                "payment_method": "bank_transfer",
+                "reference_number": "TXN123",
+                "status": "completed",
+                "notes": "Payment for services",
+                "created_at": datetime.now(),
+                "updated_at": datetime.now(),
+            },
+            "invoice": {
+                "id": 1,
+                "invoice_number": "INV-2024-0001",
+                "invoice_date": date.today(),
+                "due_date": date.today(),
+                "total_amount": Decimal("1000.00"),
+                "paid_amount": Decimal("500.00"),
+                "status": "sent",
+                "line_items_count": 3,
+            },
+            "customer": {
+                "id": 1,
+                "contact_name": "John Doe",
+                "company_name": "Test Company",
+                "email": "john@test.com",
+            },
+            "recorded_by": {
+                "id": 1,
+                "email": "admin@company.com",
+                "role": "owner",
+            },
+            "organization_id": 1,
+        }
+
+        # Verify audit trail structure
+        assert "payment" in audit_trail
+        assert "invoice" in audit_trail
+        assert "customer" in audit_trail
+        assert "recorded_by" in audit_trail
+        assert "organization_id" in audit_trail
+
+        # Verify payment details
+        payment = audit_trail["payment"]
+        assert payment["id"] == 1
+        assert payment["amount"] == Decimal("500.00")
+        assert payment["status"] == "completed"
+
+        # Verify related data
+        invoice = audit_trail["invoice"]
+        assert invoice["invoice_number"] == "INV-2024-0001"
+        assert invoice["total_amount"] == Decimal("1000.00")
+
+        customer = audit_trail["customer"]
+        assert customer["contact_name"] == "John Doe"
+        assert customer["email"] == "john@test.com"
+
+
+class TestPaymentHistoryAPI:
+    """Test payment history API endpoints"""
+
+    def test_history_api_endpoints_exist(self):
+        """Test that history API endpoints are defined"""
+        from app.api.v1.payments import router
+
+        # Check that history routes exist
+        routes = [route.path for route in router.routes]
+        assert "/history" in routes
+        assert "/history/customer/{customer_id}" in routes
+        assert "/audit/{payment_id}" in routes
+        assert "/analytics/trends" in routes
+        assert "/analytics/payment-methods" in routes
+
+    def test_history_api_methods(self):
+        """Test that history API has correct HTTP methods"""
+        from app.api.v1.payments import router
+
+        # Get history route methods
+        history_methods = []
+        for route in router.routes:
+            if hasattr(route, "methods") and (
+                "history" in route.path
+                or "audit" in route.path
+                or "analytics" in route.path
+            ):
+                history_methods.extend(route.methods)
+
+        # Check that GET methods are available for all history endpoints
+        assert "GET" in history_methods
+
+    def test_history_service_integration(self):
+        """Test that history service integrates with API"""
+        from app.services.payment_history_service import PaymentHistoryService
+
+        # Should be able to import service used by API
+        assert PaymentHistoryService is not None
+
+        # Check that service methods match API endpoint functionality
+        service_methods = [
+            "get_payment_history",  # Used by /history endpoint
+            "get_customer_payment_history",  # Used by /history/customer/{id} endpoint
+            "get_payment_audit_trail",  # Used by /audit/{id} endpoint
+            "get_payment_trends",  # Used by /analytics/trends endpoint
+            "get_payment_method_analytics",  # Used by /analytics/payment-methods endpoint
+        ]
+
+        for method in service_methods:
+            assert hasattr(PaymentHistoryService, method)

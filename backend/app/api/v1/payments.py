@@ -25,6 +25,7 @@ from app.schemas.payment import (
     PaymentAllocationCreate,
 )
 from app.services.payment_allocation_service import PaymentAllocationService
+from app.services.payment_history_service import PaymentHistoryService
 
 router = APIRouter()
 
@@ -601,4 +602,172 @@ async def get_allocation_suggestions(
         "total_suggested": sum(
             s.get("suggested_allocation", 0) for s in suggestions
         ),
+    }
+
+
+@router.get("/history", response_model=dict)
+async def get_payment_history(
+    customer_id: Optional[int] = Query(
+        None, gt=0, description="Filter by customer"
+    ),
+    invoice_id: Optional[int] = Query(
+        None, gt=0, description="Filter by invoice"
+    ),
+    user_id: Optional[int] = Query(
+        None, gt=0, description="Filter by user who recorded payment"
+    ),
+    date_from: Optional[date] = Query(
+        None, description="Filter from this date"
+    ),
+    date_to: Optional[date] = Query(None, description="Filter to this date"),
+    payment_method: Optional[str] = Query(
+        None, pattern="^(cash|check|bank_transfer|credit_card|online)$"
+    ),
+    status: Optional[str] = Query(
+        None, pattern="^(completed|pending|failed|cancelled)$"
+    ),
+    limit: int = Query(
+        50, ge=1, le=100, description="Maximum records to return"
+    ),
+    offset: int = Query(0, ge=0, description="Number of records to skip"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get comprehensive payment history with filtering"""
+
+    history_service = PaymentHistoryService(db)
+
+    payment_history, total = await history_service.get_payment_history(
+        organization_id=current_user.organization_id,
+        customer_id=customer_id,
+        invoice_id=invoice_id,
+        user_id=user_id,
+        date_from=date_from,
+        date_to=date_to,
+        payment_method=payment_method,
+        status=status,
+        limit=limit,
+        offset=offset,
+    )
+
+    return {
+        "payment_history": payment_history,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "has_more": total > (offset + limit),
+    }
+
+
+@router.get("/history/customer/{customer_id}", response_model=dict)
+async def get_customer_payment_history(
+    customer_id: int,
+    limit: int = Query(
+        50, ge=1, le=100, description="Maximum records to return"
+    ),
+    offset: int = Query(0, ge=0, description="Number of records to skip"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get payment history for a specific customer with summary"""
+
+    history_service = PaymentHistoryService(db)
+
+    (
+        payment_history,
+        customer_summary,
+    ) = await history_service.get_customer_payment_history(
+        organization_id=current_user.organization_id,
+        customer_id=customer_id,
+        limit=limit,
+        offset=offset,
+    )
+
+    return {
+        "customer_summary": customer_summary,
+        "payment_history": payment_history,
+        "limit": limit,
+        "offset": offset,
+        "has_more": customer_summary["payment_history_count"]
+        > (offset + limit),
+    }
+
+
+@router.get("/audit/{payment_id}", response_model=dict)
+async def get_payment_audit_trail(
+    payment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get detailed audit trail for a specific payment"""
+
+    history_service = PaymentHistoryService(db)
+
+    audit_trail = await history_service.get_payment_audit_trail(
+        organization_id=current_user.organization_id,
+        payment_id=payment_id,
+    )
+
+    if not audit_trail:
+        raise HTTPException(status_code=404, detail="Payment not found")
+
+    return {"audit_trail": audit_trail}
+
+
+@router.get("/analytics/trends", response_model=dict)
+async def get_payment_trends(
+    period: str = Query(
+        "monthly",
+        pattern="^(daily|weekly|monthly|quarterly)$",
+        description="Aggregation period",
+    ),
+    date_from: Optional[date] = Query(
+        None, description="Start date for trends"
+    ),
+    date_to: Optional[date] = Query(None, description="End date for trends"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get payment trends over time"""
+
+    history_service = PaymentHistoryService(db)
+
+    trends = await history_service.get_payment_trends(
+        organization_id=current_user.organization_id,
+        period=period,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+    return {
+        "period": period,
+        "date_from": date_from,
+        "date_to": date_to,
+        "trends": trends,
+    }
+
+
+@router.get("/analytics/payment-methods", response_model=dict)
+async def get_payment_method_analytics(
+    date_from: Optional[date] = Query(
+        None, description="Start date for analytics"
+    ),
+    date_to: Optional[date] = Query(None, description="End date for analytics"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get payment method analytics"""
+
+    history_service = PaymentHistoryService(db)
+
+    analytics = await history_service.get_payment_method_analytics(
+        organization_id=current_user.organization_id,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+    return {
+        "date_from": date_from,
+        "date_to": date_to,
+        "payment_methods": analytics,
     }
