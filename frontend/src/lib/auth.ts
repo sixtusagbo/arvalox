@@ -6,6 +6,11 @@ export interface User {
   role: string;
   organization_id: number;
   is_active: boolean;
+  organization?: {
+    id: number;
+    name: string;
+    slug: string;
+  };
 }
 
 export const API_BASE_URL = "http://localhost:8000/api/v1";
