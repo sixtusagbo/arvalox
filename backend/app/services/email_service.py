@@ -51,11 +51,18 @@ class EmailService:
             html_part = MIMEText(html_content, "html")
             msg.attach(html_part)
 
-            # Send email
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
-                server.starttls()
-                server.login(self.smtp_username, self.smtp_password)
-                server.send_message(msg)
+            # Send email - handle both SSL and TLS
+            if self.smtp_port == 465:
+                # SSL connection
+                with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port) as server:
+                    server.login(self.smtp_username, self.smtp_password)
+                    server.send_message(msg)
+            else:
+                # TLS connection (port 587)
+                with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                    server.starttls()
+                    server.login(self.smtp_username, self.smtp_password)
+                    server.send_message(msg)
 
             return True
 
