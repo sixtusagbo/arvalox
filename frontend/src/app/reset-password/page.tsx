@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Calculator, Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 
 function ResetPasswordForm() {
   const [password, setPassword] = useState("");
@@ -70,11 +70,8 @@ function ResetPasswordForm() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Calculator className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-gray-900">Arvalox</span>
+            <Link href="/" className="inline-block mb-4">
+              <span className="text-2xl font-bold text-blue-600">Arvalox</span>
             </Link>
           </div>
 
@@ -114,11 +111,8 @@ function ResetPasswordForm() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Calculator className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-2xl font-bold text-gray-900">Arvalox</span>
+            <Link href="/" className="inline-block mb-4">
+              <span className="text-2xl font-bold text-blue-600">Arvalox</span>
             </Link>
           </div>
 
@@ -153,11 +147,8 @@ function ResetPasswordForm() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Calculator className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-gray-900">Arvalox</span>
+          <Link href="/" className="inline-block mb-4">
+            <span className="text-2xl font-bold text-blue-600">Arvalox</span>
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Create new password</h1>
           <p className="text-gray-600 mt-2">Enter your new password below</p>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, BarChart3, Calculator, CreditCard, FileText, Users, Zap } from "lucide-react";
+import { ArrowRight, BarChart3, CreditCard, FileText, Users, Zap } from "lucide-react";
 
 export default function Home() {
   return (
@@ -9,11 +9,8 @@ export default function Home() {
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <nav className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Calculator className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-gray-900">Arvalox</span>
+          <div className="flex items-center">
+            <span className="text-2xl font-bold text-blue-600">Arvalox</span>
           </div>
           <div className="flex items-center space-x-4">
             <Link href="/login">
@@ -161,11 +158,8 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Calculator className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-xl font-bold">Arvalox</span>
+              <div className="mb-4">
+                <span className="text-xl font-bold text-blue-600">Arvalox</span>
               </div>
               <p className="text-gray-400">
                 Professional accounts receivable management for modern businesses.
