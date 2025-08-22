@@ -34,24 +34,20 @@ export interface Invoice {
 }
 
 export interface InvoiceCreate {
+  invoice_number: string;
   customer_id: number;
   invoice_date: string;
   due_date: string;
-  subtotal: number;
-  tax_amount: number;
-  total_amount: number;
   status?: 'draft' | 'sent';
   notes?: string;
   items: Omit<InvoiceItem, 'id'>[];
 }
 
 export interface InvoiceUpdate {
+  invoice_number?: string;
   customer_id?: number;
   invoice_date?: string;
   due_date?: string;
-  subtotal?: number;
-  tax_amount?: number;
-  total_amount?: number;
   status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   notes?: string;
   items?: Omit<InvoiceItem, 'id'>[];
@@ -106,6 +102,19 @@ export class InvoiceService {
     }
 
     return await response.json();
+  }
+
+  static async generateInvoiceNumber(): Promise<string> {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/invoices/generate-number`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate invoice number');
+    }
+
+    const data = await response.json();
+    return data.invoice_number;
   }
 
   static async createInvoice(invoiceData: InvoiceCreate): Promise<Invoice> {

@@ -34,6 +34,7 @@ export default function NewInvoicePage() {
   const { toast } = useToast();
 
   const [invoiceData, setInvoiceData] = useState({
+    invoice_number: '',
     customer_id: 0,
     invoice_date: new Date().toISOString().split('T')[0],
     due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
@@ -71,19 +72,29 @@ export default function NewInvoicePage() {
   }, [router]);
 
   useEffect(() => {
-    const loadCustomers = async () => {
+    const loadData = async () => {
       try {
-        const response = await CustomerService.getCustomers({ per_page: 100 });
-        setCustomers(response.customers);
+        const [customersResponse, invoiceNumber] = await Promise.all([
+          CustomerService.getCustomers({ per_page: 100 }),
+          InvoiceService.generateInvoiceNumber()
+        ]);
+        
+        setCustomers(customersResponse.customers);
+        setInvoiceData(prev => ({ ...prev, invoice_number: invoiceNumber }));
       } catch (error) {
-        console.error('Error loading customers:', error);
+        console.error('Error loading data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load data',
+          variant: 'destructive',
+        });
       }
     };
 
     if (user) {
-      loadCustomers();
+      loadData();
     }
-  }, [user]);
+  }, [user, toast]);
 
   const updateItemQuantity = useCallback((index: number, quantity: number) => {
     setItems(prev => prev.map((item, i) => {
@@ -126,6 +137,15 @@ export default function NewInvoicePage() {
   const total = InvoiceService.calculateTotal(subtotal, taxAmount);
 
   const handleSubmit = async (status: 'draft' | 'sent') => {
+    if (!invoiceData.invoice_number.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter an invoice number',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!invoiceData.customer_id) {
       toast({
         title: 'Error',
@@ -150,9 +170,6 @@ export default function NewInvoicePage() {
       const invoiceCreateData: InvoiceCreate = {
         ...invoiceData,
         customer_id: invoiceData.customer_id,
-        subtotal,
-        tax_amount: taxAmount,
-        total_amount: total,
         status,
         items,
       };
@@ -208,6 +225,15 @@ export default function NewInvoicePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="invoice_number">Invoice Number</Label>
+                    <Input
+                      id="invoice_number"
+                      value={invoiceData.invoice_number}
+                      onChange={(e) => setInvoiceData(prev => ({ ...prev, invoice_number: e.target.value }))}
+                      placeholder="Generating..."
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="customer">Customer *</Label>
                     <Select

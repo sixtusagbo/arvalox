@@ -39,6 +39,7 @@ export default function EditInvoicePage() {
   const invoiceId = parseInt(params.id as string);
 
   const [invoiceData, setInvoiceData] = useState({
+    invoice_number: '',
     customer_id: 0,
     invoice_date: '',
     due_date: '',
@@ -94,6 +95,7 @@ export default function EditInvoicePage() {
 
         // Set form data from invoice
         setInvoiceData({
+          invoice_number: invoiceData.invoice_number,
           customer_id: invoiceData.customer_id,
           invoice_date: invoiceData.invoice_date,
           due_date: invoiceData.due_date,
@@ -175,6 +177,15 @@ export default function EditInvoicePage() {
   const handleSave = async (status?: 'draft' | 'sent') => {
     if (!invoice) return;
 
+    if (!invoiceData.invoice_number.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please enter an invoice number',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!invoiceData.customer_id) {
       toast({
         title: 'Error',
@@ -199,9 +210,6 @@ export default function EditInvoicePage() {
       const updateData: InvoiceUpdate = {
         ...invoiceData,
         customer_id: invoiceData.customer_id,
-        subtotal,
-        tax_amount: taxAmount,
-        total_amount: total,
         status: status || invoiceData.status,
         items,
       };
@@ -281,6 +289,14 @@ export default function EditInvoicePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="invoice_number">Invoice Number *</Label>
+                    <Input
+                      id="invoice_number"
+                      value={invoiceData.invoice_number}
+                      onChange={(e) => setInvoiceData(prev => ({ ...prev, invoice_number: e.target.value }))}
+                    />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="customer">Customer *</Label>
                     <Select
