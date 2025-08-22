@@ -96,7 +96,29 @@ async def create_payment(
     await db.commit()
     await db.refresh(payment)
 
-    return payment
+    # Manually serialize payment with invoice data to avoid MissingGreenlet error
+    payment_dict = {
+        "id": payment.id,
+        "organization_id": payment.organization_id,
+        "invoice_id": payment.invoice_id,
+        "user_id": payment.user_id,
+        "payment_date": payment.payment_date.isoformat() if payment.payment_date else None,
+        "amount": float(payment.amount),
+        "payment_method": payment.payment_method,
+        "reference_number": payment.reference_number,
+        "status": payment.status,
+        "notes": payment.notes,
+        "created_at": payment.created_at.isoformat() if payment.created_at else None,
+        "updated_at": payment.updated_at.isoformat() if payment.updated_at else None,
+        "invoice": {
+            "id": invoice.id,
+            "invoice_number": invoice.invoice_number,
+            "customer_name": invoice.customer.name if invoice.customer else None,
+            "total_amount": float(invoice.total_amount)
+        }
+    }
+
+    return payment_dict
 
 
 @router.get("/", response_model=PaymentListResponse)
@@ -140,8 +162,8 @@ async def list_payments(
 ):
     """List payments with search and filtering"""
 
-    # Base query with organization filtering
-    query = select(Payment).where(
+    # Base query with organization filtering and invoice relationship
+    query = select(Payment).options(selectinload(Payment.invoice)).where(
         Payment.organization_id == current_user.organization_id
     )
 
@@ -196,8 +218,38 @@ async def list_payments(
     # Calculate total pages
     total_pages = (total + per_page - 1) // per_page
 
+    # Manually serialize payments with invoice data to avoid MissingGreenlet error
+    payments_data = []
+    for payment in payments:
+        payment_dict = {
+            "id": payment.id,
+            "organization_id": payment.organization_id,
+            "invoice_id": payment.invoice_id,
+            "user_id": payment.user_id,
+            "payment_date": payment.payment_date.isoformat() if payment.payment_date else None,
+            "amount": float(payment.amount),
+            "payment_method": payment.payment_method,
+            "reference_number": payment.reference_number,
+            "status": payment.status,
+            "notes": payment.notes,
+            "created_at": payment.created_at.isoformat() if payment.created_at else None,
+            "updated_at": payment.updated_at.isoformat() if payment.updated_at else None,
+            "invoice": None
+        }
+        
+        # Add invoice data if available
+        if payment.invoice:
+            payment_dict["invoice"] = {
+                "id": payment.invoice.id,
+                "invoice_number": payment.invoice.invoice_number,
+                "customer_name": payment.invoice.customer.name if payment.invoice.customer else None,
+                "total_amount": float(payment.invoice.total_amount)
+            }
+        
+        payments_data.append(payment_dict)
+
     return PaymentListResponse(
-        payments=payments,
+        payments=payments_data,
         total=total,
         page=page,
         per_page=per_page,
@@ -214,7 +266,7 @@ async def get_payment(
     """Get a specific payment by ID"""
 
     payment = await db.execute(
-        select(Payment).where(
+        select(Payment).options(selectinload(Payment.invoice)).where(
             and_(
                 Payment.id == payment_id,
                 Payment.organization_id == current_user.organization_id,
@@ -226,7 +278,33 @@ async def get_payment(
     if not payment:
         raise HTTPException(status_code=404, detail="Payment not found")
 
-    return payment
+    # Manually serialize payment with invoice data to avoid MissingGreenlet error
+    payment_dict = {
+        "id": payment.id,
+        "organization_id": payment.organization_id,
+        "invoice_id": payment.invoice_id,
+        "user_id": payment.user_id,
+        "payment_date": payment.payment_date.isoformat() if payment.payment_date else None,
+        "amount": float(payment.amount),
+        "payment_method": payment.payment_method,
+        "reference_number": payment.reference_number,
+        "status": payment.status,
+        "notes": payment.notes,
+        "created_at": payment.created_at.isoformat() if payment.created_at else None,
+        "updated_at": payment.updated_at.isoformat() if payment.updated_at else None,
+        "invoice": None
+    }
+    
+    # Add invoice data if available
+    if payment.invoice:
+        payment_dict["invoice"] = {
+            "id": payment.invoice.id,
+            "invoice_number": payment.invoice.invoice_number,
+            "customer_name": payment.invoice.customer.name if payment.invoice.customer else None,
+            "total_amount": float(payment.invoice.total_amount)
+        }
+
+    return payment_dict
 
 
 @router.put("/{payment_id}", response_model=PaymentResponse)
