@@ -23,7 +23,12 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # CORS
-    allowed_origins: list[str] = ["http://localhost:3000"]
+    allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    
+    @property
+    def cors_origins(self) -> list[str]:
+        """Parse comma-separated origins string into list"""
+        return [origin.strip() for origin in self.allowed_origins.split(",")]
 
     model_config = {
         "env_file": ".env",

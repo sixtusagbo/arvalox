@@ -5,6 +5,15 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
+class InvoiceCustomer(BaseModel):
+    """Minimal customer schema for invoice responses"""
+
+    id: int
+    name: Optional[str] = None
+    email: Optional[str] = None
+    customer_code: str
+
+
 class InvoiceItemBase(BaseModel):
     """Base invoice item schema"""
 
@@ -123,6 +132,7 @@ class InvoiceResponse(InvoiceBase):
     total_amount: Decimal
     paid_amount: Decimal
     items: List[InvoiceItemResponse] = []
+    customer: Optional[InvoiceCustomer] = None
     created_at: datetime
     updated_at: datetime
 

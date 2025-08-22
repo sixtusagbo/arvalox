@@ -84,7 +84,7 @@ export class InvoiceService {
     });
 
     const response = await AuthService.fetchWithAuth(
-      `${API_BASE_URL}/invoices?${queryParams.toString()}`
+      `${API_BASE_URL}/invoices/?${queryParams.toString()}`
     );
 
     if (!response.ok) {
@@ -118,7 +118,7 @@ export class InvoiceService {
   }
 
   static async createInvoice(invoiceData: InvoiceCreate): Promise<Invoice> {
-    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/invoices`, {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/invoices/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

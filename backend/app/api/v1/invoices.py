@@ -245,7 +245,10 @@ async def get_invoice(
 
     invoice = await db.execute(
         select(Invoice)
-        .options(selectinload(Invoice.items))
+        .options(
+            selectinload(Invoice.items),
+            selectinload(Invoice.customer)
+        )
         .where(
             and_(
                 Invoice.id == invoice_id,

@@ -191,9 +191,40 @@ async def refresh_token(
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(
     current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
 ) -> Any:
     """Get current user information"""
-    return current_user
+    # Load user with organization
+    result = await db.execute(
+        select(User)
+        .where(User.id == current_user.id)
+    )
+    user = result.scalar_one()
+    
+    # Get organization info
+    org_result = await db.execute(
+        select(Organization)
+        .where(Organization.id == user.organization_id)
+    )
+    organization = org_result.scalar_one()
+    
+    # Convert to response format
+    user_dict = {
+        "id": user.id,
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role": user.role,
+        "organization_id": user.organization_id,
+        "is_active": user.is_active,
+        "organization": {
+            "id": organization.id,
+            "name": organization.name,
+            "slug": organization.slug,
+        }
+    }
+    
+    return user_dict
 
 
 @router.post("/logout")

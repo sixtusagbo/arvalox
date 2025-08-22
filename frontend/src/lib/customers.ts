@@ -75,7 +75,7 @@ export class CustomerService {
       });
 
       const response = await AuthService.fetchWithAuth(
-        `${API_BASE_URL}/customers?${queryParams.toString()}`
+        `${API_BASE_URL}/customers/?${queryParams.toString()}`
       );
       
       if (!response.ok) {
@@ -106,7 +106,7 @@ export class CustomerService {
 
   static async createCustomer(customerData: CustomerCreate): Promise<Customer> {
     try {
-      const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/customers`, {
+      const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/customers/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
