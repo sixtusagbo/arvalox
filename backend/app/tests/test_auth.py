@@ -140,9 +140,11 @@ class TestAuthenticationSchemas:
             "role": "owner",
             "organization_id": 1,
             "is_active": True,
+            "organization_name": "Test Organization",
         }
         user_response = UserResponse(**user_data)
         assert user_response.id == 1
         assert user_response.email == "test@example.com"
         assert user_response.role == "owner"
         assert user_response.is_active is True
+        assert user_response.organization_name == "Test Organization"

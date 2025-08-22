@@ -195,19 +195,15 @@ async def get_current_user_info(
 ) -> Any:
     """Get current user information"""
     # Load user with organization
-    result = await db.execute(
-        select(User)
-        .where(User.id == current_user.id)
-    )
+    result = await db.execute(select(User).where(User.id == current_user.id))
     user = result.scalar_one()
-    
+
     # Get organization info
     org_result = await db.execute(
-        select(Organization)
-        .where(Organization.id == user.organization_id)
+        select(Organization).where(Organization.id == user.organization_id)
     )
     organization = org_result.scalar_one()
-    
+
     # Convert to response format
     user_dict = {
         "id": user.id,
@@ -217,13 +213,9 @@ async def get_current_user_info(
         "role": user.role,
         "organization_id": user.organization_id,
         "is_active": user.is_active,
-        "organization": {
-            "id": organization.id,
-            "name": organization.name,
-            "slug": organization.slug,
-        }
+        "organization_name": organization.name,
     }
-    
+
     return user_dict
 
 

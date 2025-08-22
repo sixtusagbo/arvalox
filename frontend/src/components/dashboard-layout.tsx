@@ -46,11 +46,7 @@ interface User {
   role: string;
   organization_id: number;
   is_active: boolean;
-  organization?: {
-    id: number;
-    name: string;
-    slug: string;
-  };
+  organization_name: string;
 }
 
 interface DashboardLayoutProps {
@@ -205,7 +201,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
             <div className="flex items-center justify-between px-6 py-3">
               <div className="flex items-center space-x-4">
                 <SidebarTrigger />
-                <h1 className="text-2xl font-semibold">{user.organization?.name || 'Dashboard'}</h1>
+                <h1 className="text-2xl font-semibold">{user.organization_name || 'Dashboard'}</h1>
               </div>
               <div className="flex items-center space-x-4">
                 <Button variant="ghost" size="sm">

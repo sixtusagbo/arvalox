@@ -2,13 +2,6 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 
-class OrganizationInfo(BaseModel):
-    """Organization information for user response"""
-    id: int
-    name: str
-    slug: str
-
-
 class Token(BaseModel):
     access_token: str
     refresh_token: str
@@ -60,4 +53,4 @@ class UserResponse(BaseModel):
     role: str
     organization_id: int
     is_active: bool
-    organization: Optional[OrganizationInfo] = None
+    organization_name: str

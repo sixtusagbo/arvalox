@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         """Parse comma-separated origins string into list"""
+        if self.debug:
+            # In development, be more permissive
+            return ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001"]
         return [origin.strip() for origin in self.allowed_origins.split(",")]
 
     model_config = {
