@@ -129,6 +129,30 @@ export default function InvoiceViewPage() {
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!invoice) return;
+
+    try {
+      const result = await InvoiceService.sendInvoiceEmail(invoice.id);
+      toast({
+        title: 'Success',
+        description: result.message,
+      });
+      
+      // Refresh invoice data if status was updated
+      if (result.status_updated) {
+        const updatedInvoice = await InvoiceService.getInvoice(invoice.id);
+        setInvoice(updatedInvoice);
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to send invoice email',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -195,7 +219,7 @@ export default function InvoiceViewPage() {
               </Button>
             )}
             {invoice.status === 'draft' && (
-              <Button>
+              <Button onClick={handleSendEmail}>
                 <Send className="mr-2 h-4 w-4" />
                 Send Invoice
               </Button>
@@ -376,7 +400,7 @@ export default function InvoiceViewPage() {
                   </Button>
                 )}
                 {invoice.status === 'draft' && (
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" onClick={handleSendEmail}>
                     <Send className="mr-2 h-4 w-4" />
                     Send Invoice
                   </Button>

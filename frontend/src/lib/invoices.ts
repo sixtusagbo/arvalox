@@ -172,6 +172,19 @@ export class InvoiceService {
     return await response.blob();
   }
 
+  static async sendInvoiceEmail(id: number): Promise<{message: string; email_sent: boolean; status_updated: boolean}> {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/invoices/${id}/send`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to send invoice email');
+    }
+
+    return await response.json();
+  }
+
   static formatCurrency(amount: number): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',

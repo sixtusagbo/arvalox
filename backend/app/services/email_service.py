@@ -1,7 +1,9 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 from typing import List, Optional
+from io import BytesIO
 
 from app.core.config import settings
 
@@ -22,6 +24,7 @@ class EmailService:
         subject: str,
         html_content: str,
         text_content: Optional[str] = None,
+        attachments: Optional[List[dict]] = None,
     ) -> bool:
         """
         Send an email to one or more recipients
@@ -31,6 +34,7 @@ class EmailService:
             subject: Email subject
             html_content: HTML content of the email
             text_content: Plain text content (optional)
+            attachments: List of attachment dicts with 'data', 'filename', 'mimetype' (optional)
 
         Returns:
             bool: True if email was sent successfully, False otherwise
@@ -50,6 +54,23 @@ class EmailService:
             # Add HTML content
             html_part = MIMEText(html_content, "html")
             msg.attach(html_part)
+
+            # Add attachments if provided
+            if attachments:
+                for attachment in attachments:
+                    # Ensure all required keys are present
+                    if all(key in attachment for key in ['data', 'filename']):
+                        # Create attachment part
+                        attachment_part = MIMEApplication(
+                            attachment['data'],
+                            _subtype=attachment.get('mimetype', 'octet-stream')
+                        )
+                        attachment_part.add_header(
+                            'Content-Disposition',
+                            'attachment',
+                            filename=attachment['filename']
+                        )
+                        msg.attach(attachment_part)
 
             # Send email - handle both SSL and TLS
             if self.smtp_port == 465:
@@ -212,6 +233,164 @@ class EmailService:
 
         return await self.send_email(
             [to_email], subject, html_content, text_content
+        )
+
+    async def send_invoice_email(
+        self,
+        to_email: str,
+        invoice_data: dict,
+        pdf_data: bytes,
+        organization_name: str,
+    ) -> bool:
+        """
+        Send invoice email with PDF attachment
+
+        Args:
+            to_email: Customer email address
+            invoice_data: Invoice data dictionary
+            pdf_data: PDF file binary data
+            organization_name: Organization name
+
+        Returns:
+            bool: True if email was sent successfully, False otherwise
+        """
+        subject = f"Invoice {invoice_data['invoice_number']} from {organization_name}"
+
+        # HTML content for invoice email
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Invoice {invoice_data['invoice_number']}</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }}
+                .header {{
+                    background-color: #f8f9fa;
+                    padding: 20px;
+                    text-align: center;
+                    border-radius: 8px 8px 0 0;
+                }}
+                .content {{
+                    background-color: #ffffff;
+                    padding: 30px;
+                    border: 1px solid #e9ecef;
+                }}
+                .invoice-details {{
+                    background-color: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 4px;
+                    margin: 20px 0;
+                }}
+                .amount {{
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #007bff;
+                }}
+                .footer {{
+                    background-color: #f8f9fa;
+                    padding: 20px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #6c757d;
+                    border-radius: 0 0 8px 8px;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Invoice {invoice_data['invoice_number']}</h1>
+                <p>{organization_name}</p>
+            </div>
+            
+            <div class="content">
+                <p>Dear {invoice_data.get('customer_name', 'Valued Customer')},</p>
+                
+                <p>Please find attached your invoice with the following details:</p>
+                
+                <div class="invoice-details">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="padding: 8px 0;"><strong>Invoice Number:</strong></td>
+                            <td style="padding: 8px 0;">{invoice_data['invoice_number']}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;"><strong>Invoice Date:</strong></td>
+                            <td style="padding: 8px 0;">{invoice_data['invoice_date']}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;"><strong>Due Date:</strong></td>
+                            <td style="padding: 8px 0;">{invoice_data['due_date']}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px 0;"><strong>Total Amount:</strong></td>
+                            <td style="padding: 8px 0;" class="amount">${invoice_data['total_amount']:.2f}</td>
+                        </tr>
+                    </table>
+                </div>
+                
+                {f'<p><strong>Notes:</strong> {invoice_data["notes"]}</p>' if invoice_data.get('notes') else ''}
+                
+                <p>Please review the attached PDF invoice for complete details. If you have any questions about this invoice, please don't hesitate to contact us.</p>
+                
+                <p>Thank you for your business!</p>
+                
+                <p>Best regards,<br>The {organization_name} Team</p>
+            </div>
+            
+            <div class="footer">
+                <p>This invoice was generated automatically by {organization_name}'s invoicing system.</p>
+                <p>&copy; {organization_name}. All rights reserved.</p>
+            </div>
+        </body>
+        </html>
+        """
+
+        # Plain text content
+        text_content = f"""
+        Invoice {invoice_data['invoice_number']} from {organization_name}
+        
+        Dear {invoice_data.get('customer_name', 'Valued Customer')},
+        
+        Please find attached your invoice with the following details:
+        
+        Invoice Number: {invoice_data['invoice_number']}
+        Invoice Date: {invoice_data['invoice_date']}
+        Due Date: {invoice_data['due_date']}
+        Total Amount: ${invoice_data['total_amount']:.2f}
+        
+        {f"Notes: {invoice_data['notes']}" if invoice_data.get('notes') else ''}
+        
+        Please review the attached PDF invoice for complete details. If you have any questions about this invoice, please don't hesitate to contact us.
+        
+        Thank you for your business!
+        
+        Best regards,
+        The {organization_name} Team
+        
+        ---
+        This invoice was generated automatically by {organization_name}'s invoicing system.
+        """
+
+        # Prepare PDF attachment
+        attachments = [
+            {
+                'data': pdf_data,
+                'filename': f"invoice_{invoice_data['invoice_number']}.pdf",
+                'mimetype': 'pdf'
+            }
+        ]
+
+        return await self.send_email(
+            [to_email], subject, html_content, text_content, attachments
         )
 
 

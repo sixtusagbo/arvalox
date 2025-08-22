@@ -16,6 +16,7 @@ from app.models.invoice import Invoice, InvoiceItem
 from app.models.organization import Organization
 from app.models.user import User
 from app.services.pdf_service import InvoicePDFService
+from app.services.email_service import email_service
 from app.schemas.invoice import (
     InvoiceCreate,
     InvoiceListResponse,
@@ -616,3 +617,108 @@ async def download_invoice_pdf(
             "Content-Type": "application/pdf",
         },
     )
+
+
+@router.post("/{invoice_id}/send")
+async def send_invoice_email(
+    invoice_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Send invoice via email to customer"""
+    # Get invoice with items and customer
+    invoice_query = (
+        select(Invoice)
+        .options(
+            selectinload(Invoice.items),
+            selectinload(Invoice.customer),
+        )
+        .where(
+            and_(
+                Invoice.id == invoice_id,
+                Invoice.organization_id == current_user.organization_id,
+            )
+        )
+    )
+
+    result = await db.execute(invoice_query)
+    invoice = result.scalar_one_or_none()
+
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    # Check if customer has email
+    if not invoice.customer or not invoice.customer.email:
+        raise HTTPException(
+            status_code=400, 
+            detail="Customer email is required to send invoice"
+        )
+
+    # Get organization
+    org_result = await db.execute(
+        select(Organization).where(
+            Organization.id == current_user.organization_id
+        )
+    )
+    organization = org_result.scalar_one_or_none()
+
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    try:
+        # Prepare customer data
+        customer_data = {
+            "name": invoice.customer.name,
+            "billing_address": invoice.customer.billing_address,
+            "email": invoice.customer.email,
+            "phone": invoice.customer.phone,
+        }
+
+        # Generate PDF
+        pdf_service = InvoicePDFService()
+        pdf_content = pdf_service.generate_invoice_pdf(
+            invoice=invoice, organization=organization, customer_data=customer_data
+        )
+
+        # Prepare invoice data for email
+        invoice_data = {
+            "invoice_number": invoice.invoice_number,
+            "invoice_date": invoice.invoice_date.strftime("%Y-%m-%d"),
+            "due_date": invoice.due_date.strftime("%Y-%m-%d"),
+            "total_amount": float(invoice.total_amount),
+            "customer_name": invoice.customer.name,
+            "notes": invoice.notes,
+        }
+
+        # Send email
+        email_sent = await email_service.send_invoice_email(
+            to_email=invoice.customer.email,
+            invoice_data=invoice_data,
+            pdf_data=pdf_content,
+            organization_name=organization.name,
+        )
+
+        if not email_sent:
+            raise HTTPException(
+                status_code=500, 
+                detail="Failed to send email. Please check email configuration."
+            )
+
+        # Update invoice status to 'sent' if it was 'draft'
+        if invoice.status == "draft":
+            invoice.status = "sent"
+            await db.commit()
+            await db.refresh(invoice)
+
+        return {
+            "message": f"Invoice {invoice.invoice_number} sent successfully to {invoice.customer.email}",
+            "email_sent": True,
+            "status_updated": invoice.status == "sent"
+        }
+
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to send invoice: {str(e)}"
+        )

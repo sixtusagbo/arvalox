@@ -145,6 +145,24 @@ class InvoiceResponse(InvoiceBase):
             return Decimal("0.00")
         return Decimal(str(v))
 
+    @field_validator("customer", mode="before")
+    @classmethod
+    def convert_customer(cls, v):
+        if v is None:
+            return None
+        # If it's already an InvoiceCustomer dict/object, return as is
+        if isinstance(v, dict):
+            return v
+        # If it's a Customer model object, convert to InvoiceCustomer format
+        if hasattr(v, 'id'):
+            return {
+                "id": v.id,
+                "name": getattr(v, 'name', None),
+                "email": getattr(v, 'email', None),
+                "customer_code": getattr(v, 'customer_code', ''),
+            }
+        return v
+
 
 class InvoiceListResponse(BaseModel):
     """Schema for paginated invoice list response"""
