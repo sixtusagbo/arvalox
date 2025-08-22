@@ -195,4 +195,88 @@ export class AuthService {
   static logout(): void {
     this.clearTokens();
   }
+
+  static async updateProfile(profileData: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+  }): Promise<User> {
+    const response = await this.fetchWithAuth(`${API_BASE_URL}/auth/me/profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to update profile");
+    }
+
+    return await response.json();
+  }
+
+  static async changePassword(passwordData: {
+    current_password: string;
+    new_password: string;
+  }): Promise<{ message: string }> {
+    const response = await this.fetchWithAuth(`${API_BASE_URL}/auth/me/password`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(passwordData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to change password");
+    }
+
+    return await response.json();
+  }
+
+  static async getOrganization(): Promise<{
+    id: number;
+    name: string;
+    slug: string;
+    created_at: string;
+    updated_at: string;
+  }> {
+    const response = await this.fetchWithAuth(`${API_BASE_URL}/auth/me/organization`);
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to get organization info");
+    }
+
+    return await response.json();
+  }
+
+  static async updateOrganization(orgData: {
+    name?: string;
+    slug?: string;
+  }): Promise<{
+    id: number;
+    name: string;
+    slug: string;
+    created_at: string;
+    updated_at: string;
+  }> {
+    const response = await this.fetchWithAuth(`${API_BASE_URL}/auth/me/organization`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(orgData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to update organization");
+    }
+
+    return await response.json();
+  }
 }
