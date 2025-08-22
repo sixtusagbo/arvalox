@@ -106,15 +106,111 @@ async def create_invoice(
     await db.commit()
     await db.refresh(invoice)
 
-    # Load the invoice with items
+    # Load the invoice with items and customer
     result = await db.execute(
         select(Invoice)
-        .options(selectinload(Invoice.items))
+        .options(
+            selectinload(Invoice.items),
+            selectinload(Invoice.customer)
+        )
         .where(Invoice.id == invoice.id)
     )
     invoice_with_items = result.scalar_one()
 
-    return invoice_with_items
+    # Manually serialize to avoid MissingGreenlet errors
+    invoice_dict = {
+        "id": invoice_with_items.id,
+        "organization_id": invoice_with_items.organization_id,
+        "user_id": invoice_with_items.user_id,
+        "invoice_number": invoice_with_items.invoice_number,
+        "customer_id": invoice_with_items.customer_id,
+        "invoice_date": invoice_with_items.invoice_date,
+        "due_date": invoice_with_items.due_date,
+        "status": invoice_with_items.status,
+        "notes": invoice_with_items.notes,
+        "subtotal": invoice_with_items.subtotal,
+        "tax_amount": invoice_with_items.tax_amount,
+        "total_amount": invoice_with_items.total_amount,
+        "paid_amount": invoice_with_items.paid_amount,
+        "created_at": invoice_with_items.created_at,
+        "updated_at": invoice_with_items.updated_at,
+        "items": [
+            {
+                "id": item.id,
+                "invoice_id": item.invoice_id,
+                "description": item.description,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "line_total": item.line_total,
+                "created_at": item.created_at,
+                "updated_at": item.updated_at,
+            }
+            for item in invoice_with_items.items
+        ] if invoice_with_items.items else [],
+        "customer": {
+            "id": invoice_with_items.customer.id,
+            "name": invoice_with_items.customer.name,
+            "email": invoice_with_items.customer.email,
+            "customer_code": invoice_with_items.customer.customer_code,
+        } if invoice_with_items.customer else None,
+    }
+
+    # If invoice was created with "sent" status, send email
+    if invoice_with_items.status == "sent" and invoice_with_items.customer and invoice_with_items.customer.email:
+        try:
+            # Get organization for email sending
+            from app.models.organization import Organization
+            org_result = await db.execute(
+                select(Organization).where(
+                    Organization.id == current_user.organization_id
+                )
+            )
+            organization = org_result.scalar_one_or_none()
+            
+            if organization:
+                # Prepare customer data for PDF
+                customer_data = {
+                    "name": invoice_with_items.customer.name,
+                    "billing_address": invoice_with_items.customer.billing_address,
+                    "email": invoice_with_items.customer.email,
+                    "phone": invoice_with_items.customer.phone,
+                }
+
+                # Generate PDF
+                from app.services.pdf_service import InvoicePDFService
+                pdf_service = InvoicePDFService()
+                pdf_content = pdf_service.generate_invoice_pdf(
+                    invoice=invoice_with_items, 
+                    organization=organization, 
+                    customer_data=customer_data
+                )
+
+                # Prepare invoice data for email
+                invoice_email_data = {
+                    "invoice_number": invoice_with_items.invoice_number,
+                    "invoice_date": invoice_with_items.invoice_date.strftime("%Y-%m-%d"),
+                    "due_date": invoice_with_items.due_date.strftime("%Y-%m-%d"),
+                    "total_amount": float(invoice_with_items.total_amount),
+                    "customer_name": invoice_with_items.customer.name,
+                    "notes": invoice_with_items.notes,
+                }
+
+                # Send email
+                email_sent = await email_service.send_invoice_email(
+                    to_email=invoice_with_items.customer.email,
+                    invoice_data=invoice_email_data,
+                    pdf_data=pdf_content,
+                    organization_name=organization.name,
+                )
+                
+                # Note: We don't fail the invoice creation if email fails
+                # The invoice is created successfully regardless
+                
+        except Exception as e:
+            # Log the error but don't fail the invoice creation
+            print(f"Failed to send invoice email: {str(e)}")
+
+    return invoice_dict
 
 
 @router.get("/", response_model=InvoiceListResponse)
