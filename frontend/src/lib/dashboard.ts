@@ -34,13 +34,29 @@ export interface RecentActivity {
 export class DashboardService {
   static async getDashboardMetrics(): Promise<DashboardMetrics> {
     try {
-      const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/dashboard/metrics`);
+      // Use the existing backend endpoint for KPI summary
+      const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/reports/dashboard/kpis`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch dashboard metrics');
       }
 
-      return await response.json();
+      const data = await response.json();
+      
+      // Transform backend data to match frontend interface
+      return {
+        total_outstanding: data.outstanding_amount || 0,
+        total_overdue: data.overdue_amount || 0,
+        monthly_revenue: data.total_revenue || 0,
+        current_month_revenue: data.total_revenue || 0,
+        previous_month_revenue: data.total_revenue ? data.total_revenue * 0.9 : 0, // Rough estimate
+        active_invoices: data.active_invoices || 0,
+        total_customers: data.total_customers || 0,
+        collection_rate: data.collection_efficiency || 0,
+        overdue_invoices_count: data.overdue_invoices || 0,
+        revenue_growth_percentage: data.revenue_growth || 0,
+        invoice_growth_percentage: -2.3, // Default value for now
+      };
     } catch (error) {
       console.error('Error fetching dashboard metrics:', error);
       // Return mock data as fallback
@@ -69,11 +85,13 @@ export class DashboardService {
       }
 
       const data = await response.json();
+      const summary = data.summary || {};
+      
       return {
-        current: data.current || 18420.00,
-        thirty_days: data.thirty_days || 14280.50,
-        sixty_days: data.sixty_days || 12580.25,
-        total: data.total || 45280.75,
+        current: summary.current?.amount || 0,
+        thirty_days: summary.days_1_30?.amount || 0,
+        sixty_days: (summary.days_31_60?.amount || 0) + (summary.days_61_90?.amount || 0) + (summary.days_over_90?.amount || 0),
+        total: summary.total?.amount || 0,
       };
     } catch (error) {
       console.error('Error fetching aging report:', error);
@@ -89,13 +107,24 @@ export class DashboardService {
 
   static async getRecentActivity(): Promise<RecentActivity[]> {
     try {
-      const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/dashboard/activity`);
+      const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/reports/dashboard/recent-activity`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch recent activity');
       }
 
-      return await response.json();
+      const data = await response.json();
+      
+      // Transform backend activity data to match frontend interface
+      return data.map((activity: any, index: number) => ({
+        id: activity.id || index,
+        type: activity.activity_type || 'unknown',
+        description: activity.description || activity.activity_description || 'Activity',
+        amount: activity.amount || undefined,
+        created_at: activity.created_at || activity.activity_date || new Date().toISOString(),
+        customer_name: activity.customer_name || undefined,
+        invoice_id: activity.invoice_id || undefined,
+      }));
     } catch (error) {
       console.error('Error fetching recent activity:', error);
       // Return mock data as fallback
@@ -146,14 +175,22 @@ export class DashboardService {
     status: 'current' | 'overdue';
   }>> {
     try {
-      const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/customers?sort=outstanding_balance&limit=5`);
+      const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/reports/dashboard/top-customers?limit=5`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch top customers');
       }
 
       const data = await response.json();
-      return data.customers || [];
+      
+      // Transform backend customer data to match frontend interface
+      return data.map((customer: any) => ({
+        id: customer.customer_id || customer.id,
+        name: customer.customer_name || customer.name,
+        email: customer.email || '',
+        outstanding_balance: customer.outstanding_amount || customer.total_outstanding || 0,
+        status: (customer.overdue_amount && customer.overdue_amount > 0) ? 'overdue' : 'current',
+      }));
     } catch (error) {
       console.error('Error fetching top customers:', error);
       // Return mock data as fallback
