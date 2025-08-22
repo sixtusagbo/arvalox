@@ -1,3 +1,4 @@
+import secrets
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 
@@ -97,3 +98,48 @@ def has_permission(user_role: str, required_role: str) -> bool:
     required_level = role_hierarchy.get(required_role, 0)
 
     return user_level >= required_level
+
+
+def generate_password_reset_token() -> str:
+    """Generate a secure random token for password reset"""
+    return secrets.token_urlsafe(32)
+
+
+def create_password_reset_token(
+    user_id: int, expires_delta: timedelta | None = None
+) -> str:
+    """Create JWT token for password reset"""
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(
+            hours=1
+        )  # 1 hour default
+
+    to_encode = {
+        "sub": str(user_id),
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+        "type": "password_reset",
+    }
+
+    encoded_jwt = jwt.encode(
+        to_encode, settings.secret_key, algorithm=settings.algorithm
+    )
+    return encoded_jwt
+
+
+def verify_password_reset_token(token: str) -> dict | None:
+    """Verify and decode password reset JWT token"""
+    try:
+        payload = jwt.decode(
+            token, settings.secret_key, algorithms=[settings.algorithm]
+        )
+
+        # Check if it's a password reset token
+        if payload.get("type") != "password_reset":
+            return None
+
+        return payload
+    except JWTError:
+        return None
