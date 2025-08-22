@@ -40,7 +40,7 @@ async def create_payment(
 
     # Check if invoice exists and belongs to the organization
     invoice = await db.execute(
-        select(Invoice).where(
+        select(Invoice).options(selectinload(Invoice.customer)).where(
             and_(
                 Invoice.id == payment_data.invoice_id,
                 Invoice.organization_id == current_user.organization_id,
@@ -163,7 +163,9 @@ async def list_payments(
     """List payments with search and filtering"""
 
     # Base query with organization filtering and invoice relationship
-    query = select(Payment).options(selectinload(Payment.invoice)).where(
+    query = select(Payment).options(
+        selectinload(Payment.invoice).selectinload(Invoice.customer)
+    ).where(
         Payment.organization_id == current_user.organization_id
     )
 
@@ -266,7 +268,9 @@ async def get_payment(
     """Get a specific payment by ID"""
 
     payment = await db.execute(
-        select(Payment).options(selectinload(Payment.invoice)).where(
+        select(Payment).options(
+            selectinload(Payment.invoice).selectinload(Invoice.customer)
+        ).where(
             and_(
                 Payment.id == payment_id,
                 Payment.organization_id == current_user.organization_id,
