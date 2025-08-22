@@ -376,7 +376,7 @@ export default function InvoiceViewPage() {
                 </div>
 
                 {balanceDue > 0 && (
-                  <Button className="w-full" onClick={() => router.push(`/dashboard/invoices/${invoice.id}/payment`)}>
+                  <Button className="w-full" onClick={() => router.push(`/dashboard/payments/new?invoice=${invoice.id}`)}>
                     Record Payment
                   </Button>
                 )}
