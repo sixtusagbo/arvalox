@@ -4,11 +4,17 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
   DollarSign,
   TrendingUp,
   TrendingDown,
@@ -18,13 +24,13 @@ import {
   AlertTriangle,
   Plus,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
 } from "lucide-react";
-import { 
-  DashboardService, 
-  type DashboardMetrics, 
-  type AgingReport, 
-  type RecentActivity 
+import {
+  DashboardService,
+  type DashboardMetrics,
+  type AgingReport,
+  type RecentActivity,
 } from "@/lib/dashboard";
 
 interface User {
@@ -65,18 +71,18 @@ export default function DashboardPage() {
         setUser(userData);
 
         // Fetch all dashboard data in parallel
-        const [metricsData, agingData, activityData, customersData] = await Promise.all([
-          DashboardService.getDashboardMetrics(),
-          DashboardService.getAgingReport(),
-          DashboardService.getRecentActivity(),
-          DashboardService.getTopCustomers(),
-        ]);
+        const [metricsData, agingData, activityData, customersData] =
+          await Promise.all([
+            DashboardService.getDashboardMetrics(),
+            DashboardService.getAgingReport(),
+            DashboardService.getRecentActivity(),
+            DashboardService.getTopCustomers(),
+          ]);
 
         setMetrics(metricsData);
         setAgingReport(agingData);
         setRecentActivity(activityData);
         setTopCustomers(customersData);
-
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         router.push("/login");
@@ -113,7 +119,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex space-x-2">
-            <Button>
+            <Button onClick={() => router.push("/dashboard/invoices/new")}>
               <Plus className="w-4 h-4 mr-2" />
               New Invoice
             </Button>
@@ -124,26 +130,32 @@ export default function DashboardPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Outstanding</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Outstanding
+              </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {DashboardService.formatCurrency(metrics?.total_outstanding || 0)}
+                {DashboardService.formatCurrency(
+                  metrics?.total_outstanding || 0
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 <span className="inline-flex items-center text-green-600">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   +8.2%
-                </span>
-                {" "}from last month
+                </span>{" "}
+                from last month
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Monthly Revenue
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -151,53 +163,74 @@ export default function DashboardPage() {
                 {DashboardService.formatCurrency(metrics?.monthly_revenue || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
-                <span className={`inline-flex items-center ${
-                  (metrics?.revenue_growth_percentage || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <span
+                  className={`inline-flex items-center ${
+                    (metrics?.revenue_growth_percentage || 0) >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}>
                   {(metrics?.revenue_growth_percentage || 0) >= 0 ? (
                     <ArrowUpRight className="w-3 h-3 mr-1" />
                   ) : (
                     <ArrowDownRight className="w-3 h-3 mr-1" />
                   )}
-                  {DashboardService.formatPercentage(metrics?.revenue_growth_percentage || 0)}
-                </span>
-                {" "}from last month
+                  {DashboardService.formatPercentage(
+                    metrics?.revenue_growth_percentage || 0
+                  )}
+                </span>{" "}
+                from last month
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Invoices</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Active Invoices
+              </CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics?.active_invoices || 0}</div>
+              <div className="text-2xl font-bold">
+                {metrics?.active_invoices || 0}
+              </div>
               <p className="text-xs text-muted-foreground">
-                <span className={`inline-flex items-center ${
-                  (metrics?.invoice_growth_percentage || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <span
+                  className={`inline-flex items-center ${
+                    (metrics?.invoice_growth_percentage || 0) >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}>
                   {(metrics?.invoice_growth_percentage || 0) >= 0 ? (
                     <ArrowUpRight className="w-3 h-3 mr-1" />
                   ) : (
                     <ArrowDownRight className="w-3 h-3 mr-1" />
                   )}
-                  {DashboardService.formatPercentage(metrics?.invoice_growth_percentage || 0)}
-                </span>
-                {" "}from last month
+                  {DashboardService.formatPercentage(
+                    metrics?.invoice_growth_percentage || 0
+                  )}
+                </span>{" "}
+                from last month
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Collection Rate</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Collection Rate
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metrics?.collection_rate || 0}%</div>
+              <div className="text-2xl font-bold">
+                {metrics?.collection_rate || 0}%
+              </div>
               <div className="mt-2">
-                <Progress value={metrics?.collection_rate || 0} className="w-full" />
+                <Progress
+                  value={metrics?.collection_rate || 0}
+                  className="w-full"
+                />
               </div>
             </CardContent>
           </Card>
@@ -227,15 +260,21 @@ export default function DashboardPage() {
                       <span className="text-sm">0-30 days</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-green-500 h-2 rounded-full" 
+                          <div
+                            className="bg-green-500 h-2 rounded-full"
                             style={{
-                              width: `${agingReport?.total ? (agingReport.current / agingReport.total) * 100 : 0}%`
-                            }}
-                          ></div>
+                              width: `${
+                                agingReport?.total
+                                  ? (agingReport.current / agingReport.total) *
+                                    100
+                                  : 0
+                              }%`,
+                            }}></div>
                         </div>
                         <span className="text-sm font-medium">
-                          {DashboardService.formatCurrency(agingReport?.current || 0)}
+                          {DashboardService.formatCurrency(
+                            agingReport?.current || 0
+                          )}
                         </span>
                       </div>
                     </div>
@@ -243,15 +282,22 @@ export default function DashboardPage() {
                       <span className="text-sm">31-60 days</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-yellow-500 h-2 rounded-full" 
+                          <div
+                            className="bg-yellow-500 h-2 rounded-full"
                             style={{
-                              width: `${agingReport?.total ? (agingReport.thirty_days / agingReport.total) * 100 : 0}%`
-                            }}
-                          ></div>
+                              width: `${
+                                agingReport?.total
+                                  ? (agingReport.thirty_days /
+                                      agingReport.total) *
+                                    100
+                                  : 0
+                              }%`,
+                            }}></div>
                         </div>
                         <span className="text-sm font-medium">
-                          {DashboardService.formatCurrency(agingReport?.thirty_days || 0)}
+                          {DashboardService.formatCurrency(
+                            agingReport?.thirty_days || 0
+                          )}
                         </span>
                       </div>
                     </div>
@@ -259,15 +305,22 @@ export default function DashboardPage() {
                       <span className="text-sm">60+ days</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-red-500 h-2 rounded-full" 
+                          <div
+                            className="bg-red-500 h-2 rounded-full"
                             style={{
-                              width: `${agingReport?.total ? (agingReport.sixty_days / agingReport.total) * 100 : 0}%`
-                            }}
-                          ></div>
+                              width: `${
+                                agingReport?.total
+                                  ? (agingReport.sixty_days /
+                                      agingReport.total) *
+                                    100
+                                  : 0
+                              }%`,
+                            }}></div>
                         </div>
                         <span className="text-sm font-medium">
-                          {DashboardService.formatCurrency(agingReport?.sixty_days || 0)}
+                          {DashboardService.formatCurrency(
+                            agingReport?.sixty_days || 0
+                          )}
                         </span>
                       </div>
                     </div>
@@ -279,29 +332,38 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Top Customers</CardTitle>
-                  <CardDescription>
-                    By outstanding balance
-                  </CardDescription>
+                  <CardDescription>By outstanding balance</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {topCustomers.map((customer) => (
-                      <div key={customer.id} className="flex items-center justify-between">
+                    {topCustomers.map((customer, index) => (
+                      <div
+                        key={`customer-${customer.id || customer.customer_id || index}`}
+                        className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">{customer.name}</p>
-                          <Badge variant={customer.status === "overdue" ? "destructive" : "secondary"}>
+                          <Badge
+                            variant={
+                              customer.status === "overdue"
+                                ? "destructive"
+                                : "secondary"
+                            }>
                             {customer.status}
                           </Badge>
                         </div>
                         <span className="font-medium">
-                          {DashboardService.formatCurrency(customer.outstanding_balance)}
+                          {DashboardService.formatCurrency(
+                            customer.outstanding_balance
+                          )}
                         </span>
                       </div>
                     ))}
                     {topCustomers.length === 0 && (
                       <div className="text-center py-4 text-gray-500">
                         <p>No customers yet</p>
-                        <p className="text-sm">Start by adding your first customer</p>
+                        <p className="text-sm">
+                          Start by adding your first customer
+                        </p>
                       </div>
                     )}
                   </div>
@@ -320,23 +382,29 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  {recentActivity.map((activity, index) => (
+                    <div
+                      key={`${activity.type}-${activity.id}-${index}`}
+                      className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex-1">
                         <p className="font-medium">{activity.description}</p>
                         {activity.customer_name && (
                           <p className="text-sm text-muted-foreground">
                             {activity.customer_name}
-                            {activity.invoice_id && ` - Invoice #${activity.invoice_id}`}
+                            {activity.invoice_id &&
+                              ` - Invoice #${activity.invoice_id}`}
                           </p>
                         )}
                       </div>
                       <div className="text-right">
                         {activity.amount && (
-                          <p className={`font-medium ${
-                            activity.type === 'payment_received' ? 'text-green-600' : ''
-                          }`}>
-                            {activity.type === 'payment_received' ? '+' : ''}
+                          <p
+                            className={`font-medium ${
+                              activity.type === "payment_received"
+                                ? "text-green-600"
+                                : ""
+                            }`}>
+                            {activity.type === "payment_received" ? "+" : ""}
                             {DashboardService.formatCurrency(activity.amount)}
                           </p>
                         )}
@@ -349,9 +417,12 @@ export default function DashboardPage() {
                   {recentActivity.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-lg font-medium mb-2">No activity yet</p>
+                      <p className="text-lg font-medium mb-2">
+                        No activity yet
+                      </p>
                       <p className="text-sm">
-                        Once you start creating invoices and recording payments, you'll see your activity here.
+                        Once you start creating invoices and recording payments,
+                        you'll see your activity here.
                       </p>
                     </div>
                   )}
@@ -366,12 +437,15 @@ export default function DashboardPage() {
                 <CardHeader>
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                    <CardTitle className="text-yellow-800">Payment Reminders</CardTitle>
+                    <CardTitle className="text-yellow-800">
+                      Payment Reminders
+                    </CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-yellow-800 mb-3">
-                    {Math.max(0, (metrics?.active_invoices || 0) - 5)} invoices are due for payment reminders
+                    {Math.max(0, (metrics?.active_invoices || 0) - 5)} invoices
+                    are due for payment reminders
                   </p>
                   <Button variant="outline" size="sm">
                     Send Reminders
@@ -383,12 +457,18 @@ export default function DashboardPage() {
                 <CardHeader>
                   <div className="flex items-center space-x-2">
                     <Clock className="w-5 h-5 text-red-600" />
-                    <CardTitle className="text-red-800">Overdue Invoices</CardTitle>
+                    <CardTitle className="text-red-800">
+                      Overdue Invoices
+                    </CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-red-800 mb-3">
-                    {metrics?.overdue_invoices_count || 0} invoices are overdue totaling {DashboardService.formatCurrency(metrics?.total_overdue || 0)}
+                    {metrics?.overdue_invoices_count || 0} invoices are overdue
+                    totaling{" "}
+                    {DashboardService.formatCurrency(
+                      metrics?.total_overdue || 0
+                    )}
                   </p>
                   <Button variant="outline" size="sm">
                     View Overdue
