@@ -32,6 +32,7 @@ import {
   type AgingReport,
   type RecentActivity,
 } from "@/lib/dashboard";
+import { ReportsService, AgingInvoiceDetail } from '@/lib/reports';
 
 interface User {
   id: number;
@@ -49,7 +50,9 @@ export default function DashboardPage() {
   const [agingReport, setAgingReport] = useState<AgingReport | null>(null);
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [topCustomers, setTopCustomers] = useState<any[]>([]);
+  const [overdueInvoices, setOverdueInvoices] = useState<AgingInvoiceDetail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sendingReminders, setSendingReminders] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -71,18 +74,20 @@ export default function DashboardPage() {
         setUser(userData);
 
         // Fetch all dashboard data in parallel
-        const [metricsData, agingData, activityData, customersData] =
+        const [metricsData, agingData, activityData, customersData, overdueData] =
           await Promise.all([
             DashboardService.getDashboardMetrics(),
             DashboardService.getAgingReport(),
             DashboardService.getRecentActivity(),
             DashboardService.getTopCustomers(),
+            ReportsService.getOverdueInvoices(1), // Get invoices 1+ days overdue
           ]);
 
         setMetrics(metricsData);
         setAgingReport(agingData);
         setRecentActivity(activityData);
         setTopCustomers(customersData);
+        setOverdueInvoices(overdueData);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         router.push("/login");
@@ -93,6 +98,40 @@ export default function DashboardPage() {
 
     fetchDashboardData();
   }, [router]);
+
+  const handleSendReminders = async () => {
+    if (overdueInvoices.length === 0) {
+      router.push('/dashboard/invoices/overdue');
+      return;
+    }
+
+    try {
+      setSendingReminders(true);
+      // Send reminders for all overdue invoices
+      const invoiceIds = overdueInvoices.map(invoice => invoice.invoice_id);
+      const result = await ReportsService.sendBulkReminders(invoiceIds);
+
+      // Show success/failure message based on results
+      const message = result.successful > 0 
+        ? `${result.successful} reminder(s) sent successfully${result.failed > 0 ? `, ${result.failed} failed` : ''}`
+        : `Failed to send ${result.failed} reminder(s)`;
+      
+      // You can add toast notification here if you have useToast
+      console.log(message);
+      
+      // Refresh overdue invoices data
+      const updatedOverdueData = await ReportsService.getOverdueInvoices(1);
+      setOverdueInvoices(updatedOverdueData);
+    } catch (error) {
+      console.error('Error sending reminders:', error);
+    } finally {
+      setSendingReminders(false);
+    }
+  };
+
+  const handleViewOverdue = () => {
+    router.push('/dashboard/invoices/overdue');
+  };
 
   if (isLoading || !user) {
     return (
@@ -444,11 +483,15 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-yellow-800 mb-3">
-                    {Math.max(0, (metrics?.active_invoices || 0) - 5)} invoices
-                    are due for payment reminders
+                    {overdueInvoices.length} invoices are overdue and may need payment reminders
                   </p>
-                  <Button variant="outline" size="sm">
-                    Send Reminders
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleSendReminders}
+                    disabled={sendingReminders}
+                  >
+                    {sendingReminders ? 'Sending...' : 'Send Reminders'}
                   </Button>
                 </CardContent>
               </Card>
@@ -464,13 +507,16 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-red-800 mb-3">
-                    {metrics?.overdue_invoices_count || 0} invoices are overdue
-                    totaling{" "}
-                    {DashboardService.formatCurrency(
-                      metrics?.total_overdue || 0
+                    {overdueInvoices.length} invoices are overdue totaling{" "}
+                    {ReportsService.formatCurrency(
+                      overdueInvoices.reduce((sum, invoice) => sum + invoice.outstanding_amount, 0)
                     )}
                   </p>
-                  <Button variant="outline" size="sm">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleViewOverdue}
+                  >
                     View Overdue
                   </Button>
                 </CardContent>

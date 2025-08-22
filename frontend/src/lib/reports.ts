@@ -339,4 +339,67 @@ export class ReportsService {
     if (percentage < 0) return '↓';
     return '→';
   }
+
+  // Alert-related methods
+  static async getOverdueInvoices(daysOverdue: number = 1, customerId?: number): Promise<AgingInvoiceDetail[]> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('days_overdue', daysOverdue.toString());
+    if (customerId) queryParams.append('customer_id', customerId.toString());
+
+    const response = await AuthService.fetchWithAuth(
+      `${API_BASE_URL}/reports/aging/overdue?${queryParams.toString()}`
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch overdue invoices');
+    }
+
+    return await response.json();
+  }
+
+  static async sendInvoiceReminder(invoiceId: number): Promise<{ message: string; email_sent: boolean; status_updated: boolean }> {
+    const response = await AuthService.fetchWithAuth(
+      `${API_BASE_URL}/invoices/${invoiceId}/send`,
+      {
+        method: 'POST',
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to send invoice reminder');
+    }
+
+    return await response.json();
+  }
+
+  static async sendBulkReminders(invoiceIds: number[]): Promise<{ 
+    successful: number; 
+    failed: number; 
+    details: Array<{ invoiceId: number; success: boolean; message?: string }> 
+  }> {
+    const results = await Promise.allSettled(
+      invoiceIds.map(async (invoiceId) => {
+        try {
+          const result = await this.sendInvoiceReminder(invoiceId);
+          return { invoiceId, success: true, message: result.message };
+        } catch (error) {
+          return { 
+            invoiceId, 
+            success: false, 
+            message: error instanceof Error ? error.message : 'Failed to send reminder'
+          };
+        }
+      })
+    );
+
+    const details = results.map(result => 
+      result.status === 'fulfilled' ? result.value : result.reason
+    );
+
+    const successful = details.filter(d => d.success).length;
+    const failed = details.filter(d => !d.success).length;
+
+    return { successful, failed, details };
+  }
 }
