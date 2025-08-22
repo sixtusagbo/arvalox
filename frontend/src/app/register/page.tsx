@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,25 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { AuthService } = await import("@/lib/auth");
+        const token = AuthService.getToken();
+        if (token) {
+          const userData = await AuthService.getCurrentUser();
+          if (userData) {
+            router.push("/dashboard");
+          }
+        }
+      } catch (error) {
+        // User not authenticated, continue to show register page
+      }
+    };
+
+    checkAuth();
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
