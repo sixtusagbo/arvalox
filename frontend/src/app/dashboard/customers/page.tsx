@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Search, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +14,22 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { DashboardLayout } from '@/components/dashboard-layout';
 import { CustomerService, Customer, CustomerCreate, CustomerUpdate, CustomerSearchParams } from '@/lib/customers';
 
+interface User {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  organization_id: number;
+  is_active: boolean;
+}
+
 export default function CustomersPage() {
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -43,6 +57,31 @@ export default function CustomersPage() {
     status: 'active',
   });
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { AuthService } = await import("@/lib/auth");
+        const token = AuthService.getToken();
+        if (!token) {
+          router.push("/login");
+          return;
+        }
+
+        const userData = await AuthService.getCurrentUser();
+        if (!userData) {
+          router.push("/login");
+          return;
+        }
+        setUser(userData);
+      } catch (error) {
+        console.error("Error checking auth:", error);
+        router.push("/login");
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
   const loadCustomers = useCallback(async () => {
     try {
       setLoading(true);
@@ -69,8 +108,10 @@ export default function CustomersPage() {
   }, [page, searchTerm, statusFilter, toast]);
 
   useEffect(() => {
-    loadCustomers();
-  }, [loadCustomers]);
+    if (user) {
+      loadCustomers();
+    }
+  }, [loadCustomers, user]);
 
   const handleCreateCustomer = async () => {
     try {
@@ -290,8 +331,20 @@ export default function CustomersPage() {
     </div>
   );
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <DashboardLayout user={user}>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
         <div className="flex items-center space-x-2">
@@ -503,6 +556,7 @@ export default function CustomersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
