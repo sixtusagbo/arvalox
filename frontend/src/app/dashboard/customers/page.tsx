@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Search, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,184 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { CustomerService, Customer, CustomerCreate, CustomerUpdate, CustomerSearchParams } from '@/lib/customers';
+
+// Memoized CustomerForm component to prevent unnecessary re-renders
+const CustomerForm = memo(({ customer, onChange }: {
+  customer: CustomerCreate | Customer;
+  onChange: (field: string, value: string | number) => void;
+}) => {
+  const handleInputChange = useCallback((field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.stopPropagation();
+    onChange(field, e.target.value);
+  }, [onChange]);
+
+  const handleSelectChange = useCallback((field: string) => (value: string) => {
+    onChange(field, value);
+  }, [onChange]);
+
+  const handleNumberChange = useCallback((field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    const value = field === 'credit_limit' ? parseFloat(e.target.value) || 0 : parseInt(e.target.value) || 0;
+    onChange(field, value);
+  }, [onChange]);
+
+  return (
+    <div className="grid gap-4 py-4" onClick={(e) => e.stopPropagation()}>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="customer_code" className="text-right">
+          Customer Code
+        </Label>
+        <Input
+          id="customer_code"
+          value={customer.customer_code}
+          onChange={handleInputChange('customer_code')}
+          className="col-span-3"
+          required
+          autoFocus={false}
+          onMouseDown={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="name" className="text-right">
+          Contact Name
+        </Label>
+        <Input
+          id="name"
+          value={customer.name || ''}
+          onChange={handleInputChange('name')}
+          className="col-span-3"
+          autoFocus={false}
+          onMouseDown={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="email" className="text-right">
+          Email
+        </Label>
+        <Input
+          id="email"
+          type="email"
+          value={customer.email || ''}
+          onChange={handleInputChange('email')}
+          className="col-span-3"
+          autoFocus={false}
+          onMouseDown={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="phone" className="text-right">
+          Phone
+        </Label>
+        <Input
+          id="phone"
+          value={customer.phone || ''}
+          onChange={handleInputChange('phone')}
+          className="col-span-3"
+          autoFocus={false}
+          onMouseDown={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="billing_address" className="text-right">
+          Billing Address
+        </Label>
+        <Textarea
+          id="billing_address"
+          value={customer.billing_address || ''}
+          onChange={handleInputChange('billing_address')}
+          className="col-span-3"
+          onMouseDown={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="shipping_address" className="text-right">
+          Shipping Address
+        </Label>
+        <Textarea
+          id="shipping_address"
+          value={customer.shipping_address || ''}
+          onChange={handleInputChange('shipping_address')}
+          className="col-span-3"
+          onMouseDown={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="credit_limit" className="text-right">
+          Credit Limit
+        </Label>
+        <Input
+          id="credit_limit"
+          type="number"
+          min="0"
+          step="0.01"
+          value={customer.credit_limit}
+          onChange={handleNumberChange('credit_limit')}
+          className="col-span-3"
+          autoFocus={false}
+          onMouseDown={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="payment_terms" className="text-right">
+          Payment Terms (days)
+        </Label>
+        <Input
+          id="payment_terms"
+          type="number"
+          min="0"
+          max="365"
+          value={customer.payment_terms}
+          onChange={handleNumberChange('payment_terms')}
+          className="col-span-3"
+          autoFocus={false}
+          onMouseDown={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="tax_id" className="text-right">
+          Tax ID
+        </Label>
+        <Input
+          id="tax_id"
+          value={customer.tax_id || ''}
+          onChange={handleInputChange('tax_id')}
+          className="col-span-3"
+          autoFocus={false}
+          onMouseDown={(e) => e.stopPropagation()}
+          onFocus={(e) => e.stopPropagation()}
+        />
+      </div>
+      <div className="grid grid-cols-4 items-center gap-4">
+        <Label htmlFor="status" className="text-right">
+          Status
+        </Label>
+        <Select
+          value={customer.status}
+          onValueChange={handleSelectChange('status')}
+        >
+          <SelectTrigger className="col-span-3">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="suspended">Suspended</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+});
+
+CustomerForm.displayName = 'CustomerForm';
 
 interface User {
   id: number;
@@ -38,6 +216,7 @@ export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -198,138 +377,13 @@ export default function CustomersPage() {
     }
   };
 
-  const CustomerForm = ({ customer, onChange }: {
-    customer: CustomerCreate | Customer;
-    onChange: (field: string, value: string | number) => void;
-  }) => (
-    <div className="grid gap-4 py-4">
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="customer_code" className="text-right">
-          Customer Code
-        </Label>
-        <Input
-          id="customer_code"
-          value={customer.customer_code}
-          onChange={(e) => onChange('customer_code', e.target.value)}
-          className="col-span-3"
-          required
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="name" className="text-right">
-          Contact Name
-        </Label>
-        <Input
-          id="name"
-          value={customer.name || ''}
-          onChange={(e) => onChange('name', e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="email" className="text-right">
-          Email
-        </Label>
-        <Input
-          id="email"
-          type="email"
-          value={customer.email || ''}
-          onChange={(e) => onChange('email', e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="phone" className="text-right">
-          Phone
-        </Label>
-        <Input
-          id="phone"
-          value={customer.phone || ''}
-          onChange={(e) => onChange('phone', e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="billing_address" className="text-right">
-          Billing Address
-        </Label>
-        <Textarea
-          id="billing_address"
-          value={customer.billing_address || ''}
-          onChange={(e) => onChange('billing_address', e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="shipping_address" className="text-right">
-          Shipping Address
-        </Label>
-        <Textarea
-          id="shipping_address"
-          value={customer.shipping_address || ''}
-          onChange={(e) => onChange('shipping_address', e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="credit_limit" className="text-right">
-          Credit Limit
-        </Label>
-        <Input
-          id="credit_limit"
-          type="number"
-          min="0"
-          step="0.01"
-          value={customer.credit_limit}
-          onChange={(e) => onChange('credit_limit', parseFloat(e.target.value) || 0)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="payment_terms" className="text-right">
-          Payment Terms (days)
-        </Label>
-        <Input
-          id="payment_terms"
-          type="number"
-          min="0"
-          max="365"
-          value={customer.payment_terms}
-          onChange={(e) => onChange('payment_terms', parseInt(e.target.value) || 0)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="tax_id" className="text-right">
-          Tax ID
-        </Label>
-        <Input
-          id="tax_id"
-          value={customer.tax_id || ''}
-          onChange={(e) => onChange('tax_id', e.target.value)}
-          className="col-span-3"
-        />
-      </div>
-      <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="status" className="text-right">
-          Status
-        </Label>
-        <Select
-          value={customer.status}
-          onValueChange={(value) => onChange('status', value)}
-        >
-          <SelectTrigger className="col-span-3">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-            <SelectItem value="suspended">Suspended</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
+  const handleNewCustomerChange = useCallback((field: string, value: string | number) => {
+    setNewCustomer(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleEditCustomerChange = useCallback((field: string, value: string | number) => {
+    setEditingCustomer(prev => prev ? { ...prev, [field]: value } : null);
+  }, []);
 
   if (!user) {
     return (
@@ -355,7 +409,17 @@ export default function CustomersPage() {
                 Add Customer
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
+            <DialogContent 
+              className="sm:max-w-[625px]" 
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              onPointerDownOutside={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.closest('input, textarea, select')) {
+                  e.preventDefault();
+                }
+              }}
+              onFocusOutside={(e) => e.preventDefault()}
+            >
               <DialogHeader>
                 <DialogTitle>Create Customer</DialogTitle>
                 <DialogDescription>
@@ -363,8 +427,9 @@ export default function CustomersPage() {
                 </DialogDescription>
               </DialogHeader>
               <CustomerForm
+                key="create-form"
                 customer={newCustomer}
-                onChange={(field, value) => setNewCustomer(prev => ({ ...prev, [field]: value }))}
+                onChange={handleNewCustomerChange}
               />
               <DialogFooter>
                 <Button onClick={handleCreateCustomer}>Create Customer</Button>
@@ -517,7 +582,17 @@ export default function CustomersPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[625px]">
+        <DialogContent 
+          className="sm:max-w-[625px]" 
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onPointerDownOutside={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.closest('input, textarea, select')) {
+              e.preventDefault();
+            }
+          }}
+          onFocusOutside={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>
@@ -526,8 +601,9 @@ export default function CustomersPage() {
           </DialogHeader>
           {editingCustomer && (
             <CustomerForm
+              key={`edit-form-${editingCustomer.id}`}
               customer={editingCustomer}
-              onChange={(field, value) => setEditingCustomer(prev => prev ? { ...prev, [field]: value } : null)}
+              onChange={handleEditCustomerChange}
             />
           )}
           <DialogFooter>
