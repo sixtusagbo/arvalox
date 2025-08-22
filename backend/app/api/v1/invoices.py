@@ -158,7 +158,10 @@ async def list_invoices(
     # Base query with organization filtering
     query = (
         select(Invoice)
-        .options(selectinload(Invoice.items))
+        .options(
+            selectinload(Invoice.items),
+            selectinload(Invoice.customer)
+        )
         .where(Invoice.organization_id == current_user.organization_id)
     )
 
