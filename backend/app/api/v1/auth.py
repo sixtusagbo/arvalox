@@ -23,11 +23,14 @@ from app.models.user import User
 from app.services.email_service import email_service
 from app.schemas.auth import (
     LoginRequest,
+    OrganizationUpdate,
+    PasswordChangeRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
     RefreshTokenRequest,
     RegisterRequest,
     Token,
+    UserProfileUpdate,
     UserResponse,
 )
 
@@ -330,3 +333,150 @@ async def confirm_password_reset(
     await db.commit()
 
     return {"message": "Password has been reset successfully"}
+
+
+@router.put("/me/profile", response_model=UserResponse)
+async def update_profile(
+    profile_data: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """Update user profile information"""
+    
+    # Check if email is being changed and already exists
+    if profile_data.email and profile_data.email != current_user.email:
+        result = await db.execute(
+            select(User).where(
+                User.email == profile_data.email,
+                User.id != current_user.id
+            )
+        )
+        if result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already exists"
+            )
+    
+    # Update user fields
+    update_data = profile_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(current_user, field, value)
+    
+    await db.commit()
+    await db.refresh(current_user)
+    
+    # Get organization info for response
+    org_result = await db.execute(
+        select(Organization).where(Organization.id == current_user.organization_id)
+    )
+    organization = org_result.scalar_one()
+    
+    # Return updated user info
+    user_dict = {
+        "id": current_user.id,
+        "email": current_user.email,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "role": current_user.role,
+        "organization_id": current_user.organization_id,
+        "is_active": current_user.is_active,
+        "organization_name": organization.name,
+    }
+    
+    return user_dict
+
+
+@router.put("/me/password")
+async def change_password(
+    password_data: PasswordChangeRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """Change user password"""
+    
+    # Verify current password
+    if not verify_password(password_data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect"
+        )
+    
+    # Update password
+    current_user.hashed_password = get_password_hash(password_data.new_password)
+    
+    await db.commit()
+    
+    return {"message": "Password updated successfully"}
+
+
+@router.get("/me/organization", response_model=dict)
+async def get_organization_info(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """Get organization information"""
+    
+    org_result = await db.execute(
+        select(Organization).where(Organization.id == current_user.organization_id)
+    )
+    organization = org_result.scalar_one()
+    
+    return {
+        "id": organization.id,
+        "name": organization.name,
+        "slug": organization.slug,
+        "created_at": organization.created_at,
+        "updated_at": organization.updated_at,
+    }
+
+
+@router.put("/me/organization")
+async def update_organization(
+    org_data: OrganizationUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """Update organization information (owner/admin only)"""
+    
+    # Check if user has permission to update organization
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only organization owners and admins can update organization details"
+        )
+    
+    # Get organization
+    org_result = await db.execute(
+        select(Organization).where(Organization.id == current_user.organization_id)
+    )
+    organization = org_result.scalar_one()
+    
+    # Check if slug is being changed and already exists
+    if org_data.slug and org_data.slug != organization.slug:
+        slug_result = await db.execute(
+            select(Organization).where(
+                Organization.slug == org_data.slug,
+                Organization.id != organization.id
+            )
+        )
+        if slug_result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Organization slug already exists"
+            )
+    
+    # Update organization fields
+    update_data = org_data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(organization, field, value)
+    
+    await db.commit()
+    await db.refresh(organization)
+    
+    return {
+        "id": organization.id,
+        "name": organization.name,
+        "slug": organization.slug,
+        "created_at": organization.created_at,
+        "updated_at": organization.updated_at,
+    }

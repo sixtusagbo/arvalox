@@ -54,3 +54,19 @@ class UserResponse(BaseModel):
     organization_id: int
     is_active: bool
     organization_name: str
+
+
+class UserProfileUpdate(BaseModel):
+    first_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    last_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    email: Optional[EmailStr] = None
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(..., min_length=8)
+    new_password: str = Field(..., min_length=8)
+
+
+class OrganizationUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    slug: Optional[str] = Field(None, max_length=100)
