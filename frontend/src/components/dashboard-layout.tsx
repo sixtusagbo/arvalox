@@ -92,7 +92,9 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
     router.push("/");
   };
 
-  const userInitials = `${user?.first_name?.[0] || ""}${user?.last_name?.[0] || ""}`;
+  const userInitials = `${user?.first_name?.[0] || ""}${
+    user?.last_name?.[0] || ""
+  }`;
 
   return (
     <SidebarProvider>
@@ -103,7 +105,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
               <div className="text-xl font-bold text-blue-600">Arvalox</div>
             </div>
           </SidebarHeader>
-          
+
           <SidebarContent>
             <SidebarGroup>
               <SidebarGroupContent>
@@ -113,8 +115,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                       <SidebarMenuButton
                         asChild
                         isActive={item.isActive}
-                        onClick={() => router.push(item.href)}
-                      >
+                        onClick={() => router.push(item.href)}>
                         <a href={item.href}>
                           <item.icon className="w-4 h-4" />
                           <span>{item.title}</span>
@@ -140,7 +141,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild>
-                      <a href="/dashboard/customers/new">
+                      <a href="/dashboard/customers">
                         <Plus className="w-4 h-4" />
                         <span>Add Customer</span>
                       </a>
@@ -156,7 +157,10 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="justify-start p-2 h-auto">
                   <Avatar className="w-8 h-8">
-                    <AvatarImage src="" alt={`${user?.first_name} ${user?.last_name}`} />
+                    <AvatarImage
+                      src=""
+                      alt={`${user?.first_name} ${user?.last_name}`}
+                    />
                     <AvatarFallback className="text-xs">
                       {userInitials}
                     </AvatarFallback>
@@ -165,7 +169,9 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                     <p className="text-sm font-medium">
                       {user?.first_name} {user?.last_name}
                     </p>
-                    <p className="text-xs text-muted-foreground">{user?.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {user?.email}
+                    </p>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
@@ -181,7 +187,8 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+                <DropdownMenuItem
+                  onClick={() => router.push("/dashboard/settings")}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </DropdownMenuItem>
@@ -201,7 +208,9 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
             <div className="flex items-center justify-between px-6 py-3">
               <div className="flex items-center space-x-4">
                 <SidebarTrigger />
-                <h1 className="text-2xl font-semibold">{user.organization_name || 'Dashboard'}</h1>
+                <h1 className="text-2xl font-semibold">
+                  {user.organization_name || "Dashboard"}
+                </h1>
               </div>
               <div className="flex items-center space-x-4">
                 <Button variant="ghost" size="sm">
@@ -212,9 +221,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           </header>
 
           {/* Main content */}
-          <main className="flex-1 p-6 bg-gray-50/30">
-            {children}
-          </main>
+          <main className="flex-1 p-6 bg-gray-50/30">{children}</main>
         </div>
       </div>
     </SidebarProvider>
