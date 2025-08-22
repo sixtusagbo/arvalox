@@ -230,8 +230,49 @@ async def list_invoices(
     # Calculate total pages
     total_pages = (total + per_page - 1) // per_page
 
+    # Manually serialize invoice data to avoid MissingGreenlet errors
+    invoice_list = []
+    for invoice in invoices:
+        invoice_dict = {
+            "id": invoice.id,
+            "organization_id": invoice.organization_id,
+            "user_id": invoice.user_id,
+            "invoice_number": invoice.invoice_number,
+            "customer_id": invoice.customer_id,
+            "invoice_date": invoice.invoice_date,
+            "due_date": invoice.due_date,
+            "status": invoice.status,
+            "notes": invoice.notes,
+            "subtotal": invoice.subtotal,
+            "tax_amount": invoice.tax_amount,
+            "total_amount": invoice.total_amount,
+            "paid_amount": invoice.paid_amount,
+            "created_at": invoice.created_at,
+            "updated_at": invoice.updated_at,
+            "items": [
+                {
+                    "id": item.id,
+                    "invoice_id": item.invoice_id,
+                    "description": item.description,
+                    "quantity": item.quantity,
+                    "unit_price": item.unit_price,
+                    "line_total": item.line_total,
+                    "created_at": item.created_at,
+                    "updated_at": item.updated_at,
+                }
+                for item in invoice.items
+            ] if invoice.items else [],
+            "customer": {
+                "id": invoice.customer.id,
+                "name": invoice.customer.name,
+                "email": invoice.customer.email,
+                "customer_code": invoice.customer.customer_code,
+            } if invoice.customer else None,
+        }
+        invoice_list.append(invoice_dict)
+
     return InvoiceListResponse(
-        invoices=invoices,
+        invoices=invoice_list,
         total=total,
         page=page,
         per_page=per_page,
