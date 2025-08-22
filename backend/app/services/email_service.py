@@ -25,13 +25,13 @@ class EmailService:
     ) -> bool:
         """
         Send an email to one or more recipients
-        
+
         Args:
             to_emails: List of recipient email addresses
             subject: Email subject
             html_content: HTML content of the email
             text_content: Plain text content (optional)
-            
+
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
@@ -71,29 +71,29 @@ class EmailService:
             return False
 
     async def send_password_reset_email(
-        self, 
-        to_email: str, 
-        reset_token: str, 
+        self,
+        to_email: str,
+        reset_token: str,
         user_name: str,
-        organization_name: str
+        organization_name: str,
     ) -> bool:
         """
         Send password reset email to user
-        
+
         Args:
             to_email: Recipient email address
             reset_token: Password reset token
             user_name: User's full name
             organization_name: Organization name
-            
+
         Returns:
             bool: True if email was sent successfully, False otherwise
         """
         # Create reset URL (you may need to adjust this based on your frontend URL)
         reset_url = f"http://localhost:3000/reset-password?token={reset_token}"
-        
+
         subject = f"Password Reset Request - {organization_name}"
-        
+
         # HTML content
         html_content = f"""
         <!DOCTYPE html>
@@ -161,7 +161,7 @@ class EmailService:
                 <p>We received a request to reset your password for your {organization_name} account. If you made this request, click the button below to reset your password:</p>
                 
                 <div style="text-align: center;">
-                    <a href="{reset_url}" class="button">Reset Password</a>
+                    <a href="{reset_url}" class="button" style="color: #ffffff !important">Reset Password</a>
                 </div>
                 
                 <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
@@ -185,7 +185,7 @@ class EmailService:
         </body>
         </html>
         """
-        
+
         # Plain text content
         text_content = f"""
         Password Reset Request - {organization_name}
@@ -209,8 +209,10 @@ class EmailService:
         ---
         This is an automated message. Please do not reply to this email.
         """
-        
-        return await self.send_email([to_email], subject, html_content, text_content)
+
+        return await self.send_email(
+            [to_email], subject, html_content, text_content
+        )
 
 
 # Create a singleton instance
