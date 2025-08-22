@@ -37,6 +37,7 @@ import {
   Bell,
   Plus,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface User {
   id: number;
@@ -204,7 +205,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
 
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="border-b bg-white">
+          <header className="border-b bg-background">
             <div className="flex items-center justify-between px-6 py-3">
               <div className="flex items-center space-x-4">
                 <SidebarTrigger />
@@ -213,6 +214,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                 </h1>
               </div>
               <div className="flex items-center space-x-4">
+                <ThemeToggle />
                 <Button variant="ghost" size="sm">
                   <Bell className="w-4 h-4" />
                 </Button>
@@ -221,7 +223,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           </header>
 
           {/* Main content */}
-          <main className="flex-1 p-6 bg-gray-50/30">{children}</main>
+          <main className="flex-1 p-6 bg-muted/30">{children}</main>
         </div>
       </div>
     </SidebarProvider>
