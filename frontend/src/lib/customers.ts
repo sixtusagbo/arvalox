@@ -4,7 +4,7 @@ export interface Customer {
   id: number;
   organization_id: number;
   customer_code: string;
-  contact_name?: string;
+  name?: string;
   email?: string;
   phone?: string;
   billing_address?: string;
@@ -19,7 +19,7 @@ export interface Customer {
 
 export interface CustomerCreate {
   customer_code: string;
-  contact_name?: string;
+  name?: string;
   email?: string;
   phone?: string;
   billing_address?: string;
@@ -32,7 +32,7 @@ export interface CustomerCreate {
 
 export interface CustomerUpdate {
   customer_code?: string;
-  contact_name?: string;
+  name?: string;
   email?: string;
   phone?: string;
   billing_address?: string;

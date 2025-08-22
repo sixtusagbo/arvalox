@@ -1,0 +1,1 @@
+- I have a virtual environment in the backend directory, before running any python command, ensure the virtual environment at backend/.venv is activated

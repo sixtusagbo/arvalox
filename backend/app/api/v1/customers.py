@@ -59,7 +59,7 @@ async def create_customer(
 @router.get("/", response_model=CustomerListResponse)
 async def list_customers(
     search: Optional[str] = Query(
-        None, description="Search in customer_code, contact_name, email, phone"
+        None, description="Search in customer_code, name, email, phone"
     ),
     status: Optional[str] = Query(
         None,
@@ -77,7 +77,7 @@ async def list_customers(
     ),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(20, ge=1, le=100, description="Items per page"),
-    sort_by: Optional[str] = Query("contact_name", description="Sort field"),
+    sort_by: Optional[str] = Query("name", description="Sort field"),
     sort_order: Optional[str] = Query(
         "asc", pattern="^(asc|desc)$", description="Sort order"
     ),
@@ -95,7 +95,7 @@ async def list_customers(
     if search:
         search_filter = or_(
             Customer.customer_code.ilike(f"%{search}%"),
-            Customer.contact_name.ilike(f"%{search}%"),
+            Customer.name.ilike(f"%{search}%"),
             Customer.email.ilike(f"%{search}%"),
             Customer.phone.ilike(f"%{search}%"),
         )
@@ -119,7 +119,7 @@ async def list_customers(
             query = query.where(Customer.credit_limit == 0)
 
     # Apply sorting
-    sort_column = getattr(Customer, sort_by, Customer.contact_name)
+    sort_column = getattr(Customer, sort_by, Customer.name)
     if sort_order == "desc":
         query = query.order_by(desc(sort_column))
     else:

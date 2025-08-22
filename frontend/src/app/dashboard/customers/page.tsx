@@ -46,7 +46,7 @@ export default function CustomersPage() {
 
   const [newCustomer, setNewCustomer] = useState<CustomerCreate>({
     customer_code: '',
-    contact_name: '',
+    name: '',
     email: '',
     phone: '',
     billing_address: '',
@@ -119,7 +119,7 @@ export default function CustomersPage() {
       setIsCreateDialogOpen(false);
       setNewCustomer({
         customer_code: '',
-        contact_name: '',
+        name: '',
         email: '',
         phone: '',
         billing_address: '',
@@ -149,7 +149,7 @@ export default function CustomersPage() {
     try {
       const updateData: CustomerUpdate = {
         customer_code: editingCustomer.customer_code,
-        contact_name: editingCustomer.contact_name,
+        name: editingCustomer.name,
         email: editingCustomer.email,
         phone: editingCustomer.phone,
         billing_address: editingCustomer.billing_address,
@@ -216,13 +216,13 @@ export default function CustomersPage() {
         />
       </div>
       <div className="grid grid-cols-4 items-center gap-4">
-        <Label htmlFor="contact_name" className="text-right">
+        <Label htmlFor="name" className="text-right">
           Contact Name
         </Label>
         <Input
-          id="contact_name"
-          value={customer.contact_name || ''}
-          onChange={(e) => onChange('contact_name', e.target.value)}
+          id="name"
+          value={customer.name || ''}
+          onChange={(e) => onChange('name', e.target.value)}
           className="col-span-3"
         />
       </div>
@@ -428,7 +428,7 @@ export default function CustomersPage() {
                   {customers.map((customer) => (
                     <TableRow key={customer.id}>
                       <TableCell className="font-medium">{customer.customer_code}</TableCell>
-                      <TableCell>{customer.contact_name || '-'}</TableCell>
+                      <TableCell>{customer.name || '-'}</TableCell>
                       <TableCell>{customer.email || '-'}</TableCell>
                       <TableCell>{customer.phone || '-'}</TableCell>
                       <TableCell>{CustomerService.formatCurrency(customer.credit_limit)}</TableCell>
@@ -542,7 +542,7 @@ export default function CustomersPage() {
           <DialogHeader>
             <DialogTitle>Delete Customer</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {deletingCustomer?.contact_name || deletingCustomer?.customer_code}? 
+              Are you sure you want to delete {deletingCustomer?.name || deletingCustomer?.customer_code}? 
               This action cannot be undone.
             </DialogDescription>
           </DialogHeader>

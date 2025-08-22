@@ -8,7 +8,7 @@ class CustomerBase(BaseModel):
     """Base customer schema with common fields"""
 
     customer_code: str = Field(..., min_length=1, max_length=50)
-    contact_name: Optional[str] = Field(None, max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
     email: Optional[EmailStr] = None
     phone: Optional[str] = Field(None, max_length=50)
     billing_address: Optional[str] = Field(None, max_length=500)
@@ -33,7 +33,7 @@ class CustomerUpdate(BaseModel):
     """Schema for updating a customer"""
 
     customer_code: Optional[str] = Field(None, min_length=1, max_length=50)
-    contact_name: Optional[str] = Field(None, max_length=255)
+    name: Optional[str] = Field(None, max_length=255)
     email: Optional[EmailStr] = None
     phone: Optional[str] = Field(None, max_length=50)
     billing_address: Optional[str] = Field(None, max_length=500)
@@ -69,7 +69,7 @@ class CustomerSearchParams(BaseModel):
     """Schema for customer search and filtering parameters"""
 
     search: Optional[str] = Field(
-        None, description="Search in customer_code, contact_name, email, phone"
+        None, description="Search in customer_code, name, email, phone"
     )
     status: Optional[str] = Field(
         None,
@@ -87,7 +87,7 @@ class CustomerSearchParams(BaseModel):
     )
     page: int = Field(1, ge=1, description="Page number")
     per_page: int = Field(20, ge=1, le=100, description="Items per page")
-    sort_by: Optional[str] = Field("contact_name", description="Sort field")
+    sort_by: Optional[str] = Field("name", description="Sort field")
     sort_order: Optional[str] = Field(
         "asc", pattern="^(asc|desc)$", description="Sort order"
     )

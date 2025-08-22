@@ -173,7 +173,7 @@ class TestDashboardSchemas:
         """Test top customer schema"""
         customer_data = {
             "customer_id": 1,
-            "contact_name": "John Doe",
+            "name": "John Doe",
             "company_name": "Acme Corp",
             "total_revenue": Decimal("15000.00"),
             "invoice_count": 8,
@@ -182,7 +182,7 @@ class TestDashboardSchemas:
 
         top_customer = TopCustomer(**customer_data)
         assert top_customer.customer_id == 1
-        assert top_customer.contact_name == "John Doe"
+        assert top_customer.name == "John Doe"
         assert top_customer.total_revenue == Decimal("15000.00")
 
     def test_kpi_summary_schema(self):

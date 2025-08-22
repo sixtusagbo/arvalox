@@ -54,7 +54,7 @@ class PaymentHistoryService:
         query = (
             select(Payment)
             .options(
-                selectinload(Payment.invoice).selectinload(Invoice.customer),
+                selectinload(Payment.invoice).selectinload(Invoice.customer).selectinload(Customer.organization),
                 selectinload(Payment.user),
             )
             .where(Payment.organization_id == organization_id)
@@ -114,8 +114,8 @@ class PaymentHistoryService:
                     "total_amount": payment.invoice.total_amount if payment.invoice else None,
                     "customer": {
                         "id": payment.invoice.customer.id if payment.invoice and payment.invoice.customer else None,
-                        "contact_name": payment.invoice.customer.contact_name if payment.invoice and payment.invoice.customer else None,
-                        "company_name": payment.invoice.customer.company_name if payment.invoice and payment.invoice.customer else None,
+                        "contact_name": payment.invoice.customer.name if payment.invoice and payment.invoice.customer else None,
+                        "company_name": payment.invoice.customer.organization.name if payment.invoice and payment.invoice.customer else None,
                     } if payment.invoice and payment.invoice.customer else None,
                 } if payment.invoice else None,
                 "recorded_by": {
@@ -209,7 +209,7 @@ class PaymentHistoryService:
         query = (
             select(Payment)
             .options(
-                selectinload(Payment.invoice).selectinload(Invoice.customer),
+                selectinload(Payment.invoice).selectinload(Invoice.customer).selectinload(Customer.organization),
                 selectinload(Payment.invoice).selectinload(Invoice.items),
                 selectinload(Payment.user),
             )
@@ -252,8 +252,8 @@ class PaymentHistoryService:
             } if payment.invoice else None,
             "customer": {
                 "id": payment.invoice.customer.id if payment.invoice and payment.invoice.customer else None,
-                "contact_name": payment.invoice.customer.contact_name if payment.invoice and payment.invoice.customer else None,
-                "company_name": payment.invoice.customer.company_name if payment.invoice and payment.invoice.customer else None,
+                "contact_name": payment.invoice.customer.name if payment.invoice and payment.invoice.customer else None,
+                "company_name": payment.invoice.customer.organization.name if payment.invoice and payment.invoice.customer else None,
                 "email": payment.invoice.customer.email if payment.invoice and payment.invoice.customer else None,
             } if payment.invoice and payment.invoice.customer else None,
             "recorded_by": {

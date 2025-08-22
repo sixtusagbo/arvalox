@@ -928,7 +928,7 @@ class TestPaymentHistoryService:
             },
             "customer": {
                 "id": 1,
-                "contact_name": "John Doe",
+                "name": "John Doe",
                 "company_name": "Test Company",
                 "email": "john@test.com",
             },
@@ -959,7 +959,7 @@ class TestPaymentHistoryService:
         assert invoice["total_amount"] == Decimal("1000.00")
 
         customer = audit_trail["customer"]
-        assert customer["contact_name"] == "John Doe"
+        assert customer["name"] == "John Doe"
         assert customer["email"] == "john@test.com"
 
 

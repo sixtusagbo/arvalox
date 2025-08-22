@@ -168,7 +168,7 @@ async def list_invoices(
         query = query.join(Customer)
         search_filter = or_(
             Invoice.invoice_number.ilike(f"%{search}%"),
-            Customer.contact_name.ilike(f"%{search}%"),
+            Customer.name.ilike(f"%{search}%"),
             Invoice.notes.ilike(f"%{search}%"),
         )
         query = query.where(search_filter)
@@ -587,7 +587,7 @@ async def download_invoice_pdf(
 
     # Prepare customer data
     customer_data = {
-        "contact_name": invoice.customer.contact_name,
+        "name": invoice.customer.name,
         "billing_address": invoice.customer.billing_address,
         "email": invoice.customer.email,
         "phone": invoice.customer.phone,

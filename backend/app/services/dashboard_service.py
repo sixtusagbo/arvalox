@@ -8,6 +8,7 @@ from sqlalchemy.future import select
 
 from app.models.customer import Customer
 from app.models.invoice import Invoice
+from app.models.organization import Organization
 from app.models.payment import Payment
 from app.services.aging_report_service import AgingReportService
 
@@ -401,20 +402,21 @@ class DashboardService:
         top_customers_query = (
             select(
                 Customer.id,
-                Customer.contact_name,
-                Customer.company_name,
+                Customer.name,
+                Organization.name.label("company_name"),
                 func.sum(Invoice.total_amount).label("total_revenue"),
                 func.count(Invoice.id).label("invoice_count"),
                 func.sum(Invoice.total_amount - Invoice.paid_amount).label("outstanding_amount"),
             )
             .join(Invoice, Customer.id == Invoice.customer_id)
+            .join(Organization, Customer.organization_id == Organization.id)
             .where(
                 and_(
                     Customer.organization_id == organization_id,
                     Invoice.status.in_(["sent", "paid", "overdue"]),
                 )
             )
-            .group_by(Customer.id, Customer.contact_name, Customer.company_name)
+            .group_by(Customer.id, Customer.name, Organization.name)
             .order_by(desc("total_revenue"))
             .limit(limit)
         )
@@ -425,7 +427,7 @@ class DashboardService:
         for row in top_customers_result:
             top_customers.append({
                 "customer_id": row.id,
-                "contact_name": row.contact_name,
+                "contact_name": row.name,
                 "company_name": row.company_name,
                 "total_revenue": row.total_revenue or Decimal('0.00'),
                 "invoice_count": row.invoice_count or 0,

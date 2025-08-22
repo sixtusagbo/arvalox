@@ -240,7 +240,7 @@ class ExportService:
                 payment['reference_number'] or '',
                 payment['status'],
                 payment['invoice']['invoice_number'] if payment['invoice'] else '',
-                payment['invoice']['customer']['contact_name'] if payment['invoice'] and payment['invoice']['customer'] else '',
+                payment['invoice']['customer']['name'] if payment['invoice'] and payment['invoice']['customer'] else '',
                 payment['invoice']['customer']['company_name'] if payment['invoice'] and payment['invoice']['customer'] else '',
                 payment['recorded_by']['email'] if payment['recorded_by'] else '',
                 payment['created_at'].strftime('%Y-%m-%d %H:%M:%S')
@@ -288,7 +288,7 @@ class ExportService:
         writer.writerow(['Customer Name', 'Company Name', 'Total Revenue', 'Invoice Count', 'Outstanding Amount'])
         for customer in dashboard_data['top_customers']:
             writer.writerow([
-                customer['contact_name'],
+                customer['name'],
                 customer['company_name'] or '',
                 float(customer['total_revenue']),
                 customer['invoice_count'],

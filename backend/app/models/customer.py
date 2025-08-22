@@ -20,7 +20,7 @@ class Customer(BaseModel):
         nullable=False,
     )
     customer_code = Column(String(50), nullable=False)
-    contact_name = Column(String(255))
+    name = Column(String(255))
     email = Column(String(255))
     phone = Column(String(50))
     billing_address = Column(String(500))

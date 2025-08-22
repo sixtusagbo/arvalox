@@ -81,10 +81,10 @@ class AgingReportService:
             if customer_key not in customer_summaries:
                 customer_summaries[customer_key] = {
                     "customer_id": invoice.customer_id,
-                    "customer_name": invoice.customer.contact_name
+                    "customer_name": invoice.customer.name
                     if invoice.customer
                     else "Unknown",
-                    "company_name": invoice.customer.company_name
+                    "company_name": invoice.customer.organization.name
                     if invoice.customer
                     else None,
                     "current": Decimal("0.00"),
@@ -106,10 +106,10 @@ class AgingReportService:
                     "invoice_id": invoice.id,
                     "invoice_number": invoice.invoice_number,
                     "customer_id": invoice.customer_id,
-                    "customer_name": invoice.customer.contact_name
+                    "customer_name": invoice.customer.name
                     if invoice.customer
                     else "Unknown",
-                    "company_name": invoice.customer.company_name
+                    "company_name": invoice.customer.organization.name
                     if invoice.customer
                     else None,
                     "invoice_date": invoice.invoice_date,
@@ -186,7 +186,7 @@ class AgingReportService:
 
         query = (
             select(Invoice)
-            .options(selectinload(Invoice.customer))
+            .options(selectinload(Invoice.customer).selectinload(Customer.organization))
             .where(
                 and_(
                     Invoice.organization_id == organization_id,
@@ -215,10 +215,10 @@ class AgingReportService:
                     "invoice_id": invoice.id,
                     "invoice_number": invoice.invoice_number,
                     "customer_id": invoice.customer_id,
-                    "customer_name": invoice.customer.contact_name
+                    "customer_name": invoice.customer.name
                     if invoice.customer
                     else "Unknown",
-                    "company_name": invoice.customer.company_name
+                    "company_name": invoice.customer.organization.name
                     if invoice.customer
                     else None,
                     "invoice_date": invoice.invoice_date,
@@ -326,7 +326,7 @@ class AgingReportService:
         """
         query = (
             select(Invoice)
-            .options(selectinload(Invoice.customer))
+            .options(selectinload(Invoice.customer).selectinload(Customer.organization))
             .where(
                 and_(
                     Invoice.organization_id == organization_id,

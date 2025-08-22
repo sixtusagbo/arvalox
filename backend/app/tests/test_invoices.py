@@ -529,7 +529,7 @@ class TestInvoicePDFService:
         invoice = MockInvoice()
         organization = MockOrganization()
         customer_data = {
-            "contact_name": "Test Customer",
+            "name": "Test Customer",
             "billing_address": "123 Test St",
             "email": "customer@test.com",
             "phone": "555-1234",

@@ -17,7 +17,7 @@ class TestCustomerSchemas:
         """Test valid customer creation schema"""
         customer_data = {
             "customer_code": "CUST001",
-            "contact_name": "John Doe",
+            "name": "John Doe",
             "email": "john@example.com",
             "phone": "123-456-7890",
             "billing_address": "123 Main St",
@@ -30,7 +30,7 @@ class TestCustomerSchemas:
 
         customer = CustomerCreate(**customer_data)
         assert customer.customer_code == "CUST001"
-        assert customer.contact_name == "John Doe"
+        assert customer.name == "John Doe"
         assert customer.email == "john@example.com"
         assert customer.status == "active"
 
@@ -38,7 +38,7 @@ class TestCustomerSchemas:
         """Test customer creation with invalid email"""
         customer_data = {
             "customer_code": "CUST001",
-            "contact_name": "John Doe",
+            "name": "John Doe",
             "email": "invalid-email",
             "status": "active",
         }
@@ -50,7 +50,7 @@ class TestCustomerSchemas:
         """Test customer creation with invalid status"""
         customer_data = {
             "customer_code": "CUST001",
-            "contact_name": "John Doe",
+            "name": "John Doe",
             "status": "invalid_status",
         }
 
@@ -60,7 +60,7 @@ class TestCustomerSchemas:
     def test_customer_create_missing_required_fields(self):
         """Test customer creation with missing required fields"""
         customer_data = {
-            "contact_name": "John Doe"
+            "name": "John Doe"
             # Missing customer_code
         }
 
@@ -70,12 +70,12 @@ class TestCustomerSchemas:
     def test_customer_update_partial(self):
         """Test customer update with partial data"""
         update_data = {
-            "contact_name": "Updated Name",
+            "name": "Updated Name",
             "email": "updated@example.com",
         }
 
         customer_update = CustomerUpdate(**update_data)
-        assert customer_update.contact_name == "Updated Name"
+        assert customer_update.name == "Updated Name"
         assert customer_update.email == "updated@example.com"
         assert customer_update.customer_code is None  # Not provided
 
@@ -87,7 +87,7 @@ class TestCustomerSchemas:
             "id": 1,
             "organization_id": 1,
             "customer_code": "CUST001",
-            "contact_name": "John Doe",
+            "name": "John Doe",
             "email": "john@example.com",
             "phone": "123-456-7890",
             "billing_address": "123 Main St",
@@ -116,7 +116,7 @@ class TestCustomerSchemas:
             "has_credit_limit": True,
             "page": 1,
             "per_page": 20,
-            "sort_by": "contact_name",
+            "sort_by": "name",
             "sort_order": "asc",
         }
 
@@ -148,7 +148,7 @@ class TestCustomerSchemas:
             "id": 1,
             "organization_id": 1,
             "customer_code": "CUST001",
-            "contact_name": "John Doe",
+            "name": "John Doe",
             "email": "john@example.com",
             "phone": "123-456-7890",
             "billing_address": "123 Main St",
@@ -222,7 +222,7 @@ class TestCustomerBusinessLogic:
         # Test payment terms validation
         valid_customer = CustomerCreate(
             customer_code="VALID001",
-            contact_name="Valid Customer",
+            name="Valid Customer",
             payment_terms=30,
             status="active",
         )
@@ -232,7 +232,7 @@ class TestCustomerBusinessLogic:
         with pytest.raises(ValueError):
             CustomerCreate(
                 customer_code="INVALID001",
-                contact_name="Invalid Customer",
+                name="Invalid Customer",
                 payment_terms=-1,
                 status="active",
             )
@@ -241,7 +241,7 @@ class TestCustomerBusinessLogic:
         with pytest.raises(ValueError):
             CustomerCreate(
                 customer_code="INVALID002",
-                contact_name="Invalid Customer",
+                name="Invalid Customer",
                 payment_terms=400,  # Max is 365
                 status="active",
             )
@@ -251,7 +251,7 @@ class TestCustomerBusinessLogic:
         # Valid credit limit
         valid_customer = CustomerCreate(
             customer_code="CREDIT001",
-            contact_name="Credit Customer",
+            name="Credit Customer",
             credit_limit=10000.0,
             status="active",
         )
@@ -261,7 +261,7 @@ class TestCustomerBusinessLogic:
         with pytest.raises(ValueError):
             CustomerCreate(
                 customer_code="CREDIT002",
-                contact_name="Invalid Credit Customer",
+                name="Invalid Credit Customer",
                 credit_limit=-1000.0,
                 status="active",
             )
@@ -272,15 +272,15 @@ class TestCustomerBusinessLogic:
         with pytest.raises(ValueError):
             CustomerCreate(
                 customer_code="A" * 51,  # Max is 50
-                contact_name="Test Customer",
+                name="Test Customer",
                 status="active",
             )
 
-        # Test contact_name max length
+        # Test name max length
         with pytest.raises(ValueError):
             CustomerCreate(
                 customer_code="LONG001",
-                contact_name="A" * 256,  # Max is 255
+                name="A" * 256,  # Max is 255
                 status="active",
             )
 
@@ -357,7 +357,7 @@ class TestCustomerAPIIntegration:
         # Test that schemas can be used for API serialization
         customer_data = {
             "customer_code": "TEST001",
-            "contact_name": "Test Customer",
+            "name": "Test Customer",
             "status": "active",
         }
 
@@ -371,6 +371,6 @@ class TestCustomerAPIIntegration:
 
         # Should be able to access model attributes
         assert hasattr(Customer, "customer_code")
-        assert hasattr(Customer, "contact_name")
+        assert hasattr(Customer, "name")
         assert hasattr(Customer, "organization_id")
         assert hasattr(Customer, "status")

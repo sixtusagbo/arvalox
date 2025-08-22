@@ -185,7 +185,7 @@ class InvoicePDFService:
         
         # Customer information
         customer_info = [
-            customer_data.get('contact_name', ''),
+            customer_data.get('name', ''),
             customer_data.get('billing_address', ''),
             customer_data.get('email', ''),
             customer_data.get('phone', ''),

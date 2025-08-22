@@ -85,7 +85,7 @@ class RecentActivity(BaseModel):
 class TopCustomer(BaseModel):
     """Schema for top customer"""
     customer_id: int
-    contact_name: str
+    name: str
     company_name: Optional[str] = None
     total_revenue: Decimal = Field(..., decimal_places=2)
     invoice_count: int = Field(..., ge=0)
