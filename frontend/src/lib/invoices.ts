@@ -1,0 +1,238 @@
+import { AuthService, API_BASE_URL } from './auth';
+
+export interface InvoiceItem {
+  id?: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total_amount: number;
+}
+
+export interface Invoice {
+  id: number;
+  organization_id: number;
+  customer_id: number;
+  user_id: number;
+  invoice_number: string;
+  invoice_date: string;
+  due_date: string;
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  paid_amount: number;
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  notes?: string;
+  items: InvoiceItem[];
+  customer?: {
+    id: number;
+    name: string;
+    email?: string;
+    customer_code: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceCreate {
+  customer_id: number;
+  invoice_date: string;
+  due_date: string;
+  subtotal: number;
+  tax_amount: number;
+  total_amount: number;
+  status?: 'draft' | 'sent';
+  notes?: string;
+  items: Omit<InvoiceItem, 'id'>[];
+}
+
+export interface InvoiceUpdate {
+  customer_id?: number;
+  invoice_date?: string;
+  due_date?: string;
+  subtotal?: number;
+  tax_amount?: number;
+  total_amount?: number;
+  status?: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  notes?: string;
+  items?: Omit<InvoiceItem, 'id'>[];
+}
+
+export interface InvoiceSearchParams {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  status?: string;
+  customer_id?: number;
+  date_from?: string;
+  date_to?: string;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+}
+
+export interface InvoiceListResponse {
+  invoices: Invoice[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
+export class InvoiceService {
+  static async getInvoices(params: InvoiceSearchParams = {}): Promise<InvoiceListResponse> {
+    const queryParams = new URLSearchParams();
+    
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, value.toString());
+      }
+    });
+
+    const response = await AuthService.fetchWithAuth(
+      `${API_BASE_URL}/invoices?${queryParams.toString()}`
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch invoices');
+    }
+
+    return await response.json();
+  }
+
+  static async getInvoice(id: number): Promise<Invoice> {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/invoices/${id}`);
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch invoice');
+    }
+
+    return await response.json();
+  }
+
+  static async createInvoice(invoiceData: InvoiceCreate): Promise<Invoice> {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/invoices`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(invoiceData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to create invoice');
+    }
+
+    return await response.json();
+  }
+
+  static async updateInvoice(id: number, invoiceData: InvoiceUpdate): Promise<Invoice> {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/invoices/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(invoiceData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to update invoice');
+    }
+
+    return await response.json();
+  }
+
+  static async deleteInvoice(id: number): Promise<void> {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/invoices/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to delete invoice');
+    }
+  }
+
+  static async downloadInvoicePDF(id: number): Promise<Blob> {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/invoices/${id}/pdf`);
+
+    if (!response.ok) {
+      throw new Error('Failed to download invoice PDF');
+    }
+
+    return await response.blob();
+  }
+
+  static formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  }
+
+  static formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  static getStatusColor(status: Invoice['status']): string {
+    switch (status) {
+      case 'draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'sent':
+        return 'bg-blue-100 text-blue-800';
+      case 'paid':
+        return 'bg-green-100 text-green-800';
+      case 'overdue':
+        return 'bg-red-100 text-red-800';
+      case 'cancelled':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  static formatStatus(status: Invoice['status']): string {
+    switch (status) {
+      case 'draft':
+        return 'Draft';
+      case 'sent':
+        return 'Sent';
+      case 'paid':
+        return 'Paid';
+      case 'overdue':
+        return 'Overdue';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
+    }
+  }
+
+  static calculateDaysOverdue(dueDate: string): number {
+    const due = new Date(dueDate);
+    const today = new Date();
+    const diffTime = today.getTime() - due.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  }
+
+  static calculateItemTotal(quantity: number, unitPrice: number): number {
+    return quantity * unitPrice;
+  }
+
+  static calculateSubtotal(items: InvoiceItem[]): number {
+    return items.reduce((sum, item) => sum + item.total_amount, 0);
+  }
+
+  static calculateTax(subtotal: number, taxRate: number = 0): number {
+    return subtotal * (taxRate / 100);
+  }
+
+  static calculateTotal(subtotal: number, taxAmount: number): number {
+    return subtotal + taxAmount;
+  }
+}
