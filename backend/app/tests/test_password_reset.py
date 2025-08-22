@@ -127,12 +127,14 @@ class TestEmailService:
         assert hasattr(email_service, "from_email")
 
     @pytest.mark.asyncio
+    @patch("smtplib.SMTP_SSL")
     @patch("smtplib.SMTP")
-    async def test_send_email_success(self, mock_smtp):
+    async def test_send_email_success(self, mock_smtp, mock_smtp_ssl):
         """Test successful email sending"""
-        # Mock SMTP server
+        # Mock SMTP server for both SSL and TLS
         mock_server = AsyncMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
+        mock_smtp_ssl.return_value.__enter__.return_value = mock_server
 
         email_service = EmailService()
 
@@ -144,7 +146,6 @@ class TestEmailService:
         )
 
         assert result is True
-        mock_server.starttls.assert_called_once()
         mock_server.login.assert_called_once()
         mock_server.send_message.assert_called_once()
 
@@ -166,12 +167,14 @@ class TestEmailService:
         assert result is False
 
     @pytest.mark.asyncio
+    @patch("smtplib.SMTP_SSL")
     @patch("smtplib.SMTP")
-    async def test_send_password_reset_email(self, mock_smtp):
+    async def test_send_password_reset_email(self, mock_smtp, mock_smtp_ssl):
         """Test sending password reset email"""
-        # Mock SMTP server
+        # Mock SMTP server for both SSL and TLS
         mock_server = AsyncMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
+        mock_smtp_ssl.return_value.__enter__.return_value = mock_server
 
         email_service = EmailService()
 
