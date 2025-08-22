@@ -251,14 +251,32 @@ export class InvoiceService {
   }
 
   static calculateSubtotal(items: InvoiceItem[]): number {
-    return items.reduce((sum, item) => sum + item.total_amount, 0);
+    if (!items || items.length === 0) return 0;
+    
+    return items.reduce((sum, item) => {
+      // Handle both total_amount and line_total fields, with fallback calculation
+      const quantity = Number(item.quantity) || 0;
+      const unitPrice = Number(item.unit_price) || 0;
+      const totalAmount = Number(item.total_amount) || 0;
+      const lineTotal = Number(item.line_total) || 0;
+      
+      const itemTotal = totalAmount || lineTotal || (quantity * unitPrice) || 0;
+      const validItemTotal = isNaN(itemTotal) ? 0 : itemTotal;
+      const validSum = isNaN(sum) ? 0 : sum;
+      
+      return validSum + validItemTotal;
+    }, 0);
   }
 
   static calculateTax(subtotal: number, taxRate: number = 0): number {
-    return subtotal * (taxRate / 100);
+    const validSubtotal = isNaN(subtotal) ? 0 : subtotal;
+    const validTaxRate = isNaN(taxRate) ? 0 : taxRate;
+    return validSubtotal * (validTaxRate / 100);
   }
 
   static calculateTotal(subtotal: number, taxAmount: number): number {
-    return subtotal + taxAmount;
+    const validSubtotal = isNaN(subtotal) ? 0 : subtotal;
+    const validTaxAmount = isNaN(taxAmount) ? 0 : taxAmount;
+    return validSubtotal + validTaxAmount;
   }
 }
