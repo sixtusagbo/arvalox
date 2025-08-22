@@ -20,6 +20,12 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from "lucide-react";
+import { 
+  DashboardService, 
+  type DashboardMetrics, 
+  type AgingReport, 
+  type RecentActivity 
+} from "@/lib/dashboard";
 
 interface User {
   id: number;
@@ -31,18 +37,12 @@ interface User {
   is_active: boolean;
 }
 
-interface DashboardMetrics {
-  total_outstanding: number;
-  total_overdue: number;
-  monthly_revenue: number;
-  active_invoices: number;
-  total_customers: number;
-  collection_rate: number;
-}
-
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [agingReport, setAgingReport] = useState<AgingReport | null>(null);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [topCustomers, setTopCustomers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
@@ -64,16 +64,18 @@ export default function DashboardPage() {
         }
         setUser(userData);
 
-        // TODO: Fetch dashboard metrics from backend
-        // For now, using mock data
-        setMetrics({
-          total_outstanding: 45280.50,
-          total_overdue: 12450.00,
-          monthly_revenue: 28750.25,
-          active_invoices: 23,
-          total_customers: 45,
-          collection_rate: 85.5
-        });
+        // Fetch all dashboard data in parallel
+        const [metricsData, agingData, activityData, customersData] = await Promise.all([
+          DashboardService.getDashboardMetrics(),
+          DashboardService.getAgingReport(),
+          DashboardService.getRecentActivity(),
+          DashboardService.getTopCustomers(),
+        ]);
+
+        setMetrics(metricsData);
+        setAgingReport(agingData);
+        setRecentActivity(activityData);
+        setTopCustomers(customersData);
 
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -127,7 +129,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${metrics?.total_outstanding.toLocaleString() || "0"}
+                {DashboardService.formatCurrency(metrics?.total_outstanding || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
                 <span className="inline-flex items-center text-green-600">
@@ -146,12 +148,18 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ${metrics?.monthly_revenue.toLocaleString() || "0"}
+                {DashboardService.formatCurrency(metrics?.monthly_revenue || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
-                <span className="inline-flex items-center text-green-600">
-                  <ArrowUpRight className="w-3 h-3 mr-1" />
-                  +12.1%
+                <span className={`inline-flex items-center ${
+                  (metrics?.revenue_growth_percentage || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {(metrics?.revenue_growth_percentage || 0) >= 0 ? (
+                    <ArrowUpRight className="w-3 h-3 mr-1" />
+                  ) : (
+                    <ArrowDownRight className="w-3 h-3 mr-1" />
+                  )}
+                  {DashboardService.formatPercentage(metrics?.revenue_growth_percentage || 0)}
                 </span>
                 {" "}from last month
               </p>
@@ -166,9 +174,15 @@ export default function DashboardPage() {
             <CardContent>
               <div className="text-2xl font-bold">{metrics?.active_invoices || 0}</div>
               <p className="text-xs text-muted-foreground">
-                <span className="inline-flex items-center text-red-600">
-                  <ArrowDownRight className="w-3 h-3 mr-1" />
-                  -2.3%
+                <span className={`inline-flex items-center ${
+                  (metrics?.invoice_growth_percentage || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {(metrics?.invoice_growth_percentage || 0) >= 0 ? (
+                    <ArrowUpRight className="w-3 h-3 mr-1" />
+                  ) : (
+                    <ArrowDownRight className="w-3 h-3 mr-1" />
+                  )}
+                  {DashboardService.formatPercentage(metrics?.invoice_growth_percentage || 0)}
                 </span>
                 {" "}from last month
               </p>
@@ -213,27 +227,48 @@ export default function DashboardPage() {
                       <span className="text-sm">0-30 days</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div className="bg-green-500 h-2 rounded-full" style={{width: '60%'}}></div>
+                          <div 
+                            className="bg-green-500 h-2 rounded-full" 
+                            style={{
+                              width: `${agingReport?.total ? (agingReport.current / agingReport.total) * 100 : 0}%`
+                            }}
+                          ></div>
                         </div>
-                        <span className="text-sm font-medium">$18,420</span>
+                        <span className="text-sm font-medium">
+                          {DashboardService.formatCurrency(agingReport?.current || 0)}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">31-60 days</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div className="bg-yellow-500 h-2 rounded-full" style={{width: '30%'}}></div>
+                          <div 
+                            className="bg-yellow-500 h-2 rounded-full" 
+                            style={{
+                              width: `${agingReport?.total ? (agingReport.thirty_days / agingReport.total) * 100 : 0}%`
+                            }}
+                          ></div>
                         </div>
-                        <span className="text-sm font-medium">$14,280</span>
+                        <span className="text-sm font-medium">
+                          {DashboardService.formatCurrency(agingReport?.thirty_days || 0)}
+                        </span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">60+ days</span>
                       <div className="flex items-center space-x-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div className="bg-red-500 h-2 rounded-full" style={{width: '25%'}}></div>
+                          <div 
+                            className="bg-red-500 h-2 rounded-full" 
+                            style={{
+                              width: `${agingReport?.total ? (agingReport.sixty_days / agingReport.total) * 100 : 0}%`
+                            }}
+                          ></div>
                         </div>
-                        <span className="text-sm font-medium">$12,580</span>
+                        <span className="text-sm font-medium">
+                          {DashboardService.formatCurrency(agingReport?.sixty_days || 0)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -250,22 +285,25 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {[
-                      { name: "Acme Corporation", amount: 8450.00, status: "current" },
-                      { name: "TechFlow Inc", amount: 5280.50, status: "overdue" },
-                      { name: "Global Systems", amount: 4125.75, status: "current" },
-                      { name: "StartupXYZ", amount: 3890.25, status: "overdue" }
-                    ].map((customer, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                    {topCustomers.map((customer) => (
+                      <div key={customer.id} className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">{customer.name}</p>
                           <Badge variant={customer.status === "overdue" ? "destructive" : "secondary"}>
                             {customer.status}
                           </Badge>
                         </div>
-                        <span className="font-medium">${customer.amount.toLocaleString()}</span>
+                        <span className="font-medium">
+                          {DashboardService.formatCurrency(customer.outstanding_balance)}
+                        </span>
                       </div>
                     ))}
+                    {topCustomers.length === 0 && (
+                      <div className="text-center py-4 text-gray-500">
+                        <p>No customers yet</p>
+                        <p className="text-sm">Start by adding your first customer</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -282,51 +320,41 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[
-                    { 
-                      action: "Payment received", 
-                      detail: "Acme Corporation - Invoice #1001", 
-                      amount: "+$2,450.00", 
-                      time: "2 hours ago",
-                      positive: true
-                    },
-                    { 
-                      action: "Invoice sent", 
-                      detail: "TechFlow Inc - Invoice #1002", 
-                      amount: "$1,280.50", 
-                      time: "4 hours ago",
-                      positive: false
-                    },
-                    { 
-                      action: "Customer added", 
-                      detail: "New customer: StartupXYZ", 
-                      amount: "", 
-                      time: "1 day ago",
-                      positive: false
-                    },
-                    { 
-                      action: "Payment overdue", 
-                      detail: "Global Systems - Invoice #0995", 
-                      amount: "$3,125.75", 
-                      time: "2 days ago",
-                      positive: false
-                    }
-                  ].map((activity, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                  {recentActivity.map((activity) => (
+                    <div key={activity.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex-1">
-                        <p className="font-medium">{activity.action}</p>
-                        <p className="text-sm text-muted-foreground">{activity.detail}</p>
+                        <p className="font-medium">{activity.description}</p>
+                        {activity.customer_name && (
+                          <p className="text-sm text-muted-foreground">
+                            {activity.customer_name}
+                            {activity.invoice_id && ` - Invoice #${activity.invoice_id}`}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         {activity.amount && (
-                          <p className={`font-medium ${activity.positive ? 'text-green-600' : ''}`}>
-                            {activity.amount}
+                          <p className={`font-medium ${
+                            activity.type === 'payment_received' ? 'text-green-600' : ''
+                          }`}>
+                            {activity.type === 'payment_received' ? '+' : ''}
+                            {DashboardService.formatCurrency(activity.amount)}
                           </p>
                         )}
-                        <p className="text-xs text-muted-foreground">{activity.time}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {DashboardService.getTimeAgo(activity.created_at)}
+                        </p>
                       </div>
                     </div>
                   ))}
+                  {recentActivity.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium mb-2">No activity yet</p>
+                      <p className="text-sm">
+                        Once you start creating invoices and recording payments, you'll see your activity here.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -342,7 +370,9 @@ export default function DashboardPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-yellow-800 mb-3">3 invoices are due for payment reminders</p>
+                  <p className="text-yellow-800 mb-3">
+                    {Math.max(0, (metrics?.active_invoices || 0) - 5)} invoices are due for payment reminders
+                  </p>
                   <Button variant="outline" size="sm">
                     Send Reminders
                   </Button>
@@ -357,7 +387,9 @@ export default function DashboardPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-red-800 mb-3">5 invoices are overdue totaling $12,450.00</p>
+                  <p className="text-red-800 mb-3">
+                    {metrics?.overdue_invoices_count || 0} invoices are overdue totaling {DashboardService.formatCurrency(metrics?.total_overdue || 0)}
+                  </p>
                   <Button variant="outline" size="sm">
                     View Overdue
                   </Button>
