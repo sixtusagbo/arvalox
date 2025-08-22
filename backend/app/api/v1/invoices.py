@@ -402,7 +402,45 @@ async def get_invoice(
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
 
-    return invoice
+    # Manually serialize to avoid MissingGreenlet errors
+    invoice_dict = {
+        "id": invoice.id,
+        "organization_id": invoice.organization_id,
+        "user_id": invoice.user_id,
+        "invoice_number": invoice.invoice_number,
+        "customer_id": invoice.customer_id,
+        "invoice_date": invoice.invoice_date,
+        "due_date": invoice.due_date,
+        "status": invoice.status,
+        "notes": invoice.notes,
+        "subtotal": invoice.subtotal,
+        "tax_amount": invoice.tax_amount,
+        "total_amount": invoice.total_amount,
+        "paid_amount": invoice.paid_amount,
+        "created_at": invoice.created_at,
+        "updated_at": invoice.updated_at,
+        "items": [
+            {
+                "id": item.id,
+                "invoice_id": item.invoice_id,
+                "description": item.description,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "line_total": item.line_total,
+                "created_at": item.created_at,
+                "updated_at": item.updated_at,
+            }
+            for item in invoice.items
+        ] if invoice.items else [],
+        "customer": {
+            "id": invoice.customer.id,
+            "name": invoice.customer.name,
+            "email": invoice.customer.email,
+            "customer_code": invoice.customer.customer_code,
+        } if invoice.customer else None,
+    }
+
+    return invoice_dict
 
 
 @router.put("/{invoice_id}", response_model=InvoiceResponse)
@@ -507,15 +545,56 @@ async def update_invoice(
     await db.commit()
     await db.refresh(invoice)
 
-    # Load the updated invoice with items
+    # Load the updated invoice with items and customer
     result = await db.execute(
         select(Invoice)
-        .options(selectinload(Invoice.items))
+        .options(
+            selectinload(Invoice.items),
+            selectinload(Invoice.customer)
+        )
         .where(Invoice.id == invoice.id)
     )
     updated_invoice = result.scalar_one()
 
-    return updated_invoice
+    # Manually serialize to avoid MissingGreenlet errors
+    invoice_dict = {
+        "id": updated_invoice.id,
+        "organization_id": updated_invoice.organization_id,
+        "user_id": updated_invoice.user_id,
+        "invoice_number": updated_invoice.invoice_number,
+        "customer_id": updated_invoice.customer_id,
+        "invoice_date": updated_invoice.invoice_date,
+        "due_date": updated_invoice.due_date,
+        "status": updated_invoice.status,
+        "notes": updated_invoice.notes,
+        "subtotal": updated_invoice.subtotal,
+        "tax_amount": updated_invoice.tax_amount,
+        "total_amount": updated_invoice.total_amount,
+        "paid_amount": updated_invoice.paid_amount,
+        "created_at": updated_invoice.created_at,
+        "updated_at": updated_invoice.updated_at,
+        "items": [
+            {
+                "id": item.id,
+                "invoice_id": item.invoice_id,
+                "description": item.description,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "line_total": item.line_total,
+                "created_at": item.created_at,
+                "updated_at": item.updated_at,
+            }
+            for item in updated_invoice.items
+        ] if updated_invoice.items else [],
+        "customer": {
+            "id": updated_invoice.customer.id,
+            "name": updated_invoice.customer.name,
+            "email": updated_invoice.customer.email,
+            "customer_code": updated_invoice.customer.customer_code,
+        } if updated_invoice.customer else None,
+    }
+
+    return invoice_dict
 
 
 @router.patch("/{invoice_id}/status", response_model=InvoiceResponse)
@@ -561,7 +640,56 @@ async def update_invoice_status(
     await db.commit()
     await db.refresh(invoice)
 
-    return invoice
+    # Load with customer relationship and manually serialize
+    result = await db.execute(
+        select(Invoice)
+        .options(
+            selectinload(Invoice.items),
+            selectinload(Invoice.customer)
+        )
+        .where(Invoice.id == invoice.id)
+    )
+    updated_invoice = result.scalar_one()
+
+    # Manually serialize to avoid MissingGreenlet errors
+    invoice_dict = {
+        "id": updated_invoice.id,
+        "organization_id": updated_invoice.organization_id,
+        "user_id": updated_invoice.user_id,
+        "invoice_number": updated_invoice.invoice_number,
+        "customer_id": updated_invoice.customer_id,
+        "invoice_date": updated_invoice.invoice_date,
+        "due_date": updated_invoice.due_date,
+        "status": updated_invoice.status,
+        "notes": updated_invoice.notes,
+        "subtotal": updated_invoice.subtotal,
+        "tax_amount": updated_invoice.tax_amount,
+        "total_amount": updated_invoice.total_amount,
+        "paid_amount": updated_invoice.paid_amount,
+        "created_at": updated_invoice.created_at,
+        "updated_at": updated_invoice.updated_at,
+        "items": [
+            {
+                "id": item.id,
+                "invoice_id": item.invoice_id,
+                "description": item.description,
+                "quantity": item.quantity,
+                "unit_price": item.unit_price,
+                "line_total": item.line_total,
+                "created_at": item.created_at,
+                "updated_at": item.updated_at,
+            }
+            for item in updated_invoice.items
+        ] if updated_invoice.items else [],
+        "customer": {
+            "id": updated_invoice.customer.id,
+            "name": updated_invoice.customer.name,
+            "email": updated_invoice.customer.email,
+            "customer_code": updated_invoice.customer.customer_code,
+        } if updated_invoice.customer else None,
+    }
+
+    return invoice_dict
 
 
 @router.delete("/{invoice_id}")

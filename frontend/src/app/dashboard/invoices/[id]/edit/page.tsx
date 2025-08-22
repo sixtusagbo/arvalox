@@ -103,12 +103,12 @@ export default function EditInvoicePage() {
           status: invoiceData.status,
         });
 
-        // Set items
+        // Set items - handle both line_total and total_amount for compatibility
         setItems(invoiceData.items.map(item => ({
           description: item.description,
           quantity: item.quantity,
           unit_price: item.unit_price,
-          total_amount: item.total_amount,
+          total_amount: item.line_total || item.total_amount || (item.quantity * item.unit_price),
         })));
 
         // Calculate tax rate from invoice data

@@ -2,10 +2,14 @@ import { AuthService, API_BASE_URL } from './auth';
 
 export interface InvoiceItem {
   id?: number;
+  invoice_id?: number;
   description: string;
   quantity: number;
   unit_price: number;
-  total_amount: number;
+  line_total: number;
+  total_amount?: number; // For frontend compatibility
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Invoice {
