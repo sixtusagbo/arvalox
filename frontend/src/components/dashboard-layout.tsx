@@ -36,6 +36,7 @@ import {
   LogOut,
   Bell,
   Plus,
+  Zap,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { CurrencyProvider } from "@/contexts/currency-context";
@@ -82,6 +83,11 @@ const navigationItems = [
     title: "Reports",
     icon: BarChart3,
     href: "/dashboard/reports",
+  },
+  {
+    title: "Subscription",
+    icon: Zap,
+    href: "/dashboard/subscription",
   },
 ];
 

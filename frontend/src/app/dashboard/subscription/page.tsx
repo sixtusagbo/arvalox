@@ -1,0 +1,354 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Calendar, 
+  CreditCard, 
+  AlertTriangle, 
+  CheckCircle, 
+  Clock,
+  Zap,
+  TrendingUp,
+  Settings
+} from "lucide-react";
+
+import { PlanCard } from "@/components/subscription/plan-card";
+import { UsageStatsCard } from "@/components/subscription/usage-stats";
+import { 
+  SubscriptionService, 
+  SubscriptionSummary, 
+  SubscriptionPlan,
+  PlanComparison
+} from "@/lib/subscription-service";
+import { LoadingSpinner } from "@/components/ui/loading";
+import { useToast } from "@/hooks/use-toast";
+
+export default function SubscriptionPage() {
+  const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
+  const [availablePlans, setAvailablePlans] = useState<SubscriptionPlan[]>([]);
+  const [planComparison, setPlanComparison] = useState<PlanComparison | null>(null);
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { toast } = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    loadSubscriptionData();
+  }, []);
+
+  const loadSubscriptionData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const [currentSub, plans, comparison] = await Promise.all([
+        SubscriptionService.getCurrentSubscription(),
+        SubscriptionService.getPlans(),
+        SubscriptionService.comparePlans().catch(() => null), // Optional, might not exist
+      ]);
+
+      setSubscription(currentSub);
+      setAvailablePlans(plans);
+      setPlanComparison(comparison);
+      setBillingInterval(currentSub.subscription.billing_interval);
+
+    } catch (error) {
+      console.error('Error loading subscription data:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load subscription data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePlanSelect = async (plan: SubscriptionPlan) => {
+    try {
+      setIsUpgrading(true);
+      
+      if (!subscription) {
+        // Create new subscription
+        await SubscriptionService.createSubscription({
+          plan_id: plan.id,
+          billing_interval: billingInterval,
+          start_trial: true,
+          trial_days: 14,
+        });
+        
+        toast({
+          title: "Subscription Created!",
+          description: `Welcome to the ${plan.name}. Your 14-day trial has started.`,
+        });
+      } else {
+        // Upgrade existing subscription
+        await SubscriptionService.upgradeSubscription({
+          plan_id: plan.id,
+          billing_interval: billingInterval,
+        });
+        
+        toast({
+          title: "Plan Updated!",
+          description: `Successfully upgraded to ${plan.name}.`,
+        });
+      }
+
+      // Reload data
+      await loadSubscriptionData();
+
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update subscription",
+      });
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!subscription) return;
+    
+    if (!confirm('Are you sure you want to cancel your subscription? It will remain active until the end of your current billing period.')) {
+      return;
+    }
+
+    try {
+      await SubscriptionService.cancelSubscription({
+        cancel_immediately: false,
+        reason: 'User requested cancellation',
+      });
+      
+      toast({
+        title: "Subscription Cancelled",
+        description: "Your subscription will remain active until the end of your current billing period.",
+      });
+      
+      await loadSubscriptionData();
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      toast({
+        variant: "destructive",
+        title: "Cancellation Failed",
+        description: error instanceof Error ? error.message : "Failed to cancel subscription",
+      });
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (error && !subscription) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Subscription</h1>
+          <p className="text-muted-foreground">Manage your subscription and billing</p>
+        </div>
+        
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+        
+        <Button onClick={loadSubscriptionData}>Try Again</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Subscription</h1>
+          <p className="text-muted-foreground">Manage your subscription and billing</p>
+        </div>
+        
+        {subscription && (
+          <Button variant="outline" onClick={() => router.push('/dashboard/settings')}>
+            <Settings className="w-4 h-4 mr-2" />
+            Billing Settings
+          </Button>
+        )}
+      </div>
+
+      {subscription && (
+        <>
+          {/* Current Subscription Overview */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <CreditCard className="w-5 h-5" />
+                  <span>Current Plan</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg">{subscription.subscription.plan.name}</h3>
+                    <p className="text-muted-foreground text-sm">
+                      {SubscriptionService.formatPrice(
+                        subscription.subscription.billing_interval === 'yearly' 
+                          ? subscription.subscription.plan.yearly_price 
+                          : subscription.subscription.plan.monthly_price,
+                        subscription.subscription.plan.currency
+                      )}
+                      /{subscription.subscription.billing_interval}
+                    </p>
+                  </div>
+                  
+                  <Badge 
+                    className={`capitalize ${
+                      subscription.subscription.status === 'active' ? 'bg-green-100 text-green-800' :
+                      subscription.subscription.status === 'trialing' ? 'bg-blue-100 text-blue-800' :
+                      subscription.subscription.status === 'canceled' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}
+                  >
+                    {subscription.subscription.status}
+                  </Badge>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Current Period
+                    </span>
+                    <span>
+                      {formatDate(subscription.subscription.current_period_start)} - {formatDate(subscription.subscription.current_period_end)}
+                    </span>
+                  </div>
+
+                  {subscription.subscription.is_trialing && subscription.subscription.trial_end && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center">
+                        <Clock className="w-4 h-4 mr-2" />
+                        Trial Ends
+                      </span>
+                      <span className="font-medium">
+                        {formatDate(subscription.subscription.trial_end)}
+                        {subscription.subscription.days_until_expiry !== null && (
+                          <span className="ml-1 text-blue-600">
+                            ({subscription.subscription.days_until_expiry} days left)
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  )}
+
+                  {subscription.subscription.next_payment_date && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center">
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Next Payment
+                      </span>
+                      <span>{formatDate(subscription.subscription.next_payment_date)}</span>
+                    </div>
+                  )}
+                </div>
+
+                {subscription.subscription.status === 'canceled' && subscription.subscription.canceled_at && (
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Subscription cancelled on {formatDate(subscription.subscription.canceled_at)}. 
+                      Access continues until {formatDate(subscription.subscription.current_period_end)}.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Usage Stats */}
+            <UsageStatsCard stats={subscription.usage_stats} />
+          </div>
+
+          {/* Trial Warning */}
+          {subscription.subscription.is_trialing && subscription.subscription.days_until_expiry !== null && subscription.subscription.days_until_expiry <= 7 && (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Your free trial expires in {subscription.subscription.days_until_expiry} days. 
+                Choose a plan below to continue using Arvalox without interruption.
+              </AlertDescription>
+            </Alert>
+          )}
+        </>
+      )}
+
+      {/* Plan Selection */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">
+              {subscription ? 'Upgrade Your Plan' : 'Choose Your Plan'}
+            </h2>
+            <p className="text-muted-foreground">
+              {subscription ? 'Compare plans and upgrade for more features' : 'Select the perfect plan for your business needs'}
+            </p>
+          </div>
+
+          <Tabs value={billingInterval} onValueChange={(value) => setBillingInterval(value as 'monthly' | 'yearly')}>
+            <TabsList>
+              <TabsTrigger value="monthly">Monthly</TabsTrigger>
+              <TabsTrigger value="yearly">Yearly</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {availablePlans.map((plan, index) => (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              isCurrentPlan={subscription?.subscription.plan.id === plan.id}
+              isPopular={plan.plan_type === 'starter'} // Mark starter as popular
+              billingInterval={billingInterval}
+              onSelectPlan={handlePlanSelect}
+              isLoading={isUpgrading}
+              disabled={isUpgrading}
+            />
+          ))}
+        </div>
+
+        {subscription && subscription.subscription.status !== 'canceled' && (
+          <div className="flex justify-center pt-6">
+            <Button 
+              variant="destructive" 
+              onClick={handleCancelSubscription}
+              size="sm"
+            >
+              Cancel Subscription
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
