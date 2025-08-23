@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import auth, customers, invoices, payments, reports
+from app.api.v1 import auth, customers, invoices, payments, reports, subscriptions
 
 api_router = APIRouter()
 
@@ -15,3 +15,4 @@ api_router.include_router(
     payments.router, prefix="/payments", tags=["payments"]
 )
 api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
+api_router.include_router(subscriptions.router, prefix="/subscriptions", tags=["subscriptions"])
