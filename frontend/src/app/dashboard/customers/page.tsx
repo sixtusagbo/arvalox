@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { LoadingState } from '@/components/ui/loading';
 import { CustomerService, Customer, CustomerCreate, CustomerUpdate, CustomerSearchParams } from '@/lib/customers';
+import { showSubscriptionLimitError } from '@/lib/subscription-errors';
 
 // Memoized CustomerForm component to prevent unnecessary re-renders
 const CustomerForm = memo(({ customer, onChange }: {
@@ -315,10 +316,8 @@ export default function CustomersPage() {
       });
       loadCustomers();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create customer',
-        variant: 'destructive',
+      showSubscriptionLimitError(error, () => {
+        router.push('/dashboard/subscription');
       });
     }
   };

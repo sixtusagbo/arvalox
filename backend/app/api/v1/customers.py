@@ -9,6 +9,7 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.customer import Customer
 from app.models.user import User
+from app.services.subscription_service import SubscriptionService
 from app.schemas.customer import (
     CustomerCreate,
     CustomerListResponse,
@@ -27,6 +28,19 @@ async def create_customer(
     current_user: User = Depends(get_current_user),
 ):
     """Create a new customer"""
+
+    # Check subscription limits before creating customer
+    subscription = await SubscriptionService.get_organization_subscription(
+        db, current_user.organization_id
+    )
+    if subscription and subscription.plan:
+        # Check if customer limit is reached
+        if subscription.plan.max_customers is not None:
+            if subscription.current_customer_count >= subscription.plan.max_customers:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Customer limit reached. You have reached the maximum of {subscription.plan.max_customers} customers for your {subscription.plan.name}. Please upgrade your plan to add more customers."
+                )
 
     # Check if customer_code already exists for this organization
     existing_customer = await db.execute(
@@ -52,6 +66,12 @@ async def create_customer(
     db.add(customer)
     await db.commit()
     await db.refresh(customer)
+
+    # Update subscription usage count after successful creation
+    if subscription:
+        await SubscriptionService.update_usage_count(
+            db, subscription.id, customer_count_delta=1
+        )
 
     return customer
 
@@ -249,7 +269,18 @@ async def delete_customer(
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
 
+    # Get subscription before deletion for usage count update
+    subscription = await SubscriptionService.get_organization_subscription(
+        db, current_user.organization_id
+    )
+
     await db.delete(customer)
     await db.commit()
+
+    # Decrease usage count after successful deletion
+    if subscription:
+        await SubscriptionService.update_usage_count(
+            db, subscription.id, customer_count_delta=-1
+        )
 
     return {"message": "Customer deleted successfully"}

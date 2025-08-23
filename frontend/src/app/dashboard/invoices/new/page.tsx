@@ -15,6 +15,7 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { LoadingState } from '@/components/ui/loading';
 import { InvoiceService, InvoiceCreate, InvoiceItem } from '@/lib/invoices';
 import { CustomerService, Customer } from '@/lib/customers';
+import { showSubscriptionLimitError } from '@/lib/subscription-errors';
 
 interface User {
   id: number;
@@ -184,10 +185,8 @@ export default function NewInvoicePage() {
 
       router.push(`/dashboard/invoices/${newInvoice.id}`);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create invoice',
-        variant: 'destructive',
+      showSubscriptionLimitError(error, () => {
+        router.push('/dashboard/subscription');
       });
     } finally {
       setLoading(false);

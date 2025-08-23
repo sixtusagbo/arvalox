@@ -17,6 +17,7 @@ from app.models.organization import Organization
 from app.models.user import User
 from app.services.pdf_service import InvoicePDFService
 from app.services.email_service import email_service
+from app.services.subscription_service import SubscriptionService
 from app.schemas.invoice import (
     InvoiceCreate,
     InvoiceListResponse,
@@ -50,6 +51,19 @@ async def create_invoice(
     customer = customer.scalar_one_or_none()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
+
+    # Check subscription limits before creating invoice
+    subscription = await SubscriptionService.get_organization_subscription(
+        db, current_user.organization_id
+    )
+    if subscription and subscription.plan:
+        # Check if invoice limit is reached
+        if subscription.plan.max_invoices_per_month is not None:
+            if subscription.current_invoice_count >= subscription.plan.max_invoices_per_month:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Invoice limit reached. You have reached the maximum of {subscription.plan.max_invoices_per_month} invoices per month for your {subscription.plan.name}. Please upgrade your plan to create more invoices."
+                )
 
     # Check if invoice number already exists for this organization
     existing_invoice = await db.execute(
@@ -105,6 +119,12 @@ async def create_invoice(
 
     await db.commit()
     await db.refresh(invoice)
+
+    # Update subscription usage count after successful creation
+    if subscription:
+        await SubscriptionService.update_usage_count(
+            db, subscription.id, invoice_count_delta=1
+        )
 
     # Load the invoice with items and customer
     result = await db.execute(
@@ -720,8 +740,19 @@ async def delete_invoice(
             detail="Only draft invoices can be deleted",
         )
 
+    # Update subscription usage count before deletion
+    subscription = await SubscriptionService.get_organization_subscription(
+        db, current_user.organization_id
+    )
+    
     await db.delete(invoice)
     await db.commit()
+
+    # Decrease usage count after successful deletion
+    if subscription:
+        await SubscriptionService.update_usage_count(
+            db, subscription.id, invoice_count_delta=-1
+        )
 
     return {"message": "Invoice deleted successfully"}
 
