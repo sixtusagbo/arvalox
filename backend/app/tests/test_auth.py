@@ -148,3 +148,73 @@ class TestAuthenticationSchemas:
         assert user_response.role == "owner"
         assert user_response.is_active is True
         assert user_response.organization_name == "Test Organization"
+
+    def test_register_request_validation(self):
+        """Test RegisterRequest schema validation"""
+        from app.schemas.auth import RegisterRequest
+
+        # Valid data with currency
+        valid_data = {
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "first_name": "Test",
+            "last_name": "User",
+            "organization_name": "Test Organization",
+            "organization_slug": "test-org",
+            "currency_code": "NGN",
+            "currency_symbol": "₦",
+            "currency_name": "Nigerian Naira",
+        }
+        register_request = RegisterRequest(**valid_data)
+        assert register_request.email == "test@example.com"
+        assert register_request.organization_name == "Test Organization"
+        assert register_request.currency_code == "NGN"
+        assert register_request.currency_symbol == "₦"
+        assert register_request.currency_name == "Nigerian Naira"
+
+        # Valid data without currency (should allow None)
+        minimal_data = {
+            "email": "test@example.com",
+            "password": "testpassword123",
+            "first_name": "Test",
+            "last_name": "User",
+            "organization_name": "Test Organization",
+        }
+        minimal_request = RegisterRequest(**minimal_data)
+        assert minimal_request.currency_code is None
+        assert minimal_request.currency_symbol is None
+        assert minimal_request.currency_name is None
+
+        # Invalid currency code (too long)
+        with pytest.raises(ValueError):
+            RegisterRequest(**{
+                **valid_data,
+                "currency_code": "NGNN"  # 4 chars, should be 3
+            })
+
+        # Invalid currency code (too short)
+        with pytest.raises(ValueError):
+            RegisterRequest(**{
+                **valid_data,
+                "currency_code": "NG"  # 2 chars, should be 3
+            })
+
+    def test_organization_update_schema(self):
+        """Test OrganizationUpdate schema validation"""
+        from app.schemas.auth import OrganizationUpdate
+
+        # Valid currency update
+        update_data = {
+            "currency_code": "USD",
+            "currency_symbol": "$",
+            "currency_name": "US Dollar",
+        }
+        org_update = OrganizationUpdate(**update_data)
+        assert org_update.currency_code == "USD"
+        assert org_update.currency_symbol == "$"
+        assert org_update.currency_name == "US Dollar"
+
+        # Partial update (only name)
+        partial_update = OrganizationUpdate(name="New Organization Name")
+        assert partial_update.name == "New Organization Name"
+        assert partial_update.currency_code is None

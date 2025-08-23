@@ -13,7 +13,7 @@ class Organization(BaseModel):
     phone = Column(String(50))
     address = Column(String(500))
 
-    # Subscription info
+    # Legacy subscription fields - will be replaced by new subscription system
     subscription_plan = Column(
         String(50), default="trial"
     )  # trial, starter, professional, enterprise
@@ -22,7 +22,7 @@ class Organization(BaseModel):
     )  # active, cancelled, past_due, unpaid
     trial_ends_at = Column(DateTime(timezone=True))
 
-    # Usage limits
+    # Legacy usage limits - will be replaced by new subscription system
     invoice_limit = Column(Integer, default=10)
     user_limit = Column(Integer, default=1)
     
@@ -40,4 +40,7 @@ class Organization(BaseModel):
     )
     invoices = relationship(
         "Invoice", back_populates="organization", cascade="all, delete-orphan"
+    )
+    subscription = relationship(
+        "Subscription", back_populates="organization", uselist=False, cascade="all, delete-orphan"
     )
