@@ -70,3 +70,20 @@ class PasswordChangeRequest(BaseModel):
 class OrganizationUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=255)
     slug: Optional[str] = Field(None, max_length=100)
+    currency_code: Optional[str] = Field(None, min_length=3, max_length=3)
+    currency_symbol: Optional[str] = Field(None, min_length=1, max_length=10)
+    currency_name: Optional[str] = Field(None, min_length=1, max_length=100)
+
+
+class OrganizationResponse(BaseModel):
+    model_config = {"from_attributes": True}
+    
+    id: int
+    name: str
+    slug: str
+    email: str
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    currency_code: str
+    currency_symbol: str
+    currency_name: str

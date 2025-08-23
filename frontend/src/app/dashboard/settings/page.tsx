@@ -12,7 +12,9 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { LoadingState } from '@/components/ui/loading';
+import { CurrencyPicker } from '@/components/ui/currency-picker';
 import { AuthService } from '@/lib/auth';
+import { Currency } from '@/lib/currencies';
 
 interface User {
   id: number;
@@ -29,6 +31,12 @@ interface Organization {
   id: number;
   name: string;
   slug: string;
+  email: string;
+  phone: string | null;
+  address: string | null;
+  currency_code: string;
+  currency_symbol: string;
+  currency_name: string;
   created_at: string;
   updated_at: string;
 }
@@ -65,6 +73,9 @@ export default function SettingsPage() {
   const [orgData, setOrgData] = useState({
     name: '',
     slug: '',
+    currency_code: 'NGN',
+    currency_symbol: '₦',
+    currency_name: 'Nigerian Naira',
   });
   const [orgSaving, setOrgSaving] = useState(false);
 
@@ -100,6 +111,9 @@ export default function SettingsPage() {
         setOrgData({
           name: orgData.name,
           slug: orgData.slug,
+          currency_code: orgData.currency_code,
+          currency_symbol: orgData.currency_symbol,
+          currency_name: orgData.currency_name,
         });
       } catch (error) {
         console.error('Error loading data:', error);
@@ -231,6 +245,15 @@ export default function SettingsPage() {
     } finally {
       setOrgSaving(false);
     }
+  };
+
+  const handleCurrencyChange = (currency: Currency) => {
+    setOrgData(prev => ({
+      ...prev,
+      currency_code: currency.code,
+      currency_symbol: currency.symbol,
+      currency_name: currency.name,
+    }));
   };
 
   if (!user || loading) {
@@ -441,6 +464,19 @@ export default function SettingsPage() {
                     />
                     <p className="text-xs text-muted-foreground">
                       Used for custom URLs and integrations
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <CurrencyPicker
+                      label="Organization Currency"
+                      value={orgData.currency_code}
+                      onValueChange={handleCurrencyChange}
+                      disabled={user.role !== 'owner' && user.role !== 'admin'}
+                      placeholder="Select your organization's currency"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This will be used for all invoices and financial displays
                     </p>
                   </div>
 

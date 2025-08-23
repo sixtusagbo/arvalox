@@ -241,6 +241,12 @@ export class AuthService {
     id: number;
     name: string;
     slug: string;
+    email: string;
+    phone: string | null;
+    address: string | null;
+    currency_code: string;
+    currency_symbol: string;
+    currency_name: string;
     created_at: string;
     updated_at: string;
   }> {
@@ -257,10 +263,19 @@ export class AuthService {
   static async updateOrganization(orgData: {
     name?: string;
     slug?: string;
+    currency_code?: string;
+    currency_symbol?: string;
+    currency_name?: string;
   }): Promise<{
     id: number;
     name: string;
     slug: string;
+    email: string;
+    phone: string | null;
+    address: string | null;
+    currency_code: string;
+    currency_symbol: string;
+    currency_name: string;
     created_at: string;
     updated_at: string;
   }> {

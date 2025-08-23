@@ -23,6 +23,7 @@ from app.models.user import User
 from app.services.email_service import email_service
 from app.schemas.auth import (
     LoginRequest,
+    OrganizationResponse,
     OrganizationUpdate,
     PasswordChangeRequest,
     PasswordResetConfirm,
@@ -409,7 +410,7 @@ async def change_password(
     return {"message": "Password updated successfully"}
 
 
-@router.get("/me/organization", response_model=dict)
+@router.get("/me/organization", response_model=OrganizationResponse)
 async def get_organization_info(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -421,16 +422,10 @@ async def get_organization_info(
     )
     organization = org_result.scalar_one()
     
-    return {
-        "id": organization.id,
-        "name": organization.name,
-        "slug": organization.slug,
-        "created_at": organization.created_at,
-        "updated_at": organization.updated_at,
-    }
+    return organization
 
 
-@router.put("/me/organization")
+@router.put("/me/organization", response_model=OrganizationResponse)
 async def update_organization(
     org_data: OrganizationUpdate,
     current_user: User = Depends(get_current_user),
@@ -473,10 +468,4 @@ async def update_organization(
     await db.commit()
     await db.refresh(organization)
     
-    return {
-        "id": organization.id,
-        "name": organization.name,
-        "slug": organization.slug,
-        "created_at": organization.created_at,
-        "updated_at": organization.updated_at,
-    }
+    return organization

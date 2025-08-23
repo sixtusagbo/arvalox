@@ -25,6 +25,11 @@ class Organization(BaseModel):
     # Usage limits
     invoice_limit = Column(Integer, default=10)
     user_limit = Column(Integer, default=1)
+    
+    # Currency settings
+    currency_code = Column(String(3), default="NGN", nullable=False)  # ISO 4217 currency code
+    currency_symbol = Column(String(10), default="₦", nullable=False)  # Currency symbol
+    currency_name = Column(String(100), default="Nigerian Naira", nullable=False)  # Full currency name
 
     # Relationships
     users = relationship(
