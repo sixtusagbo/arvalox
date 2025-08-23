@@ -1,5 +1,55 @@
 @import "tailwindcss";
 
+@theme {
+  --default-font-family: var(--font-geist-sans);
+  --default-mono-font-family: var(--font-geist-mono);
+}
+
+/* Configure Tailwind v4 dark mode to use class strategy */
+@variant dark (.dark &);
+@variant light (.light &);
+
+/* Override Tailwind's default media-based dark mode with class-based approach */
+
+/* Reset any media query based dark mode when explicit classes are present */
+:root.light *,
+:root[data-theme="light"] * {
+  /* Force light mode styles even when system prefers dark */
+  color-scheme: light;
+}
+
+:root.dark *,
+:root[data-theme="dark"] * {
+  /* Force dark mode styles even when system prefers light */
+  color-scheme: dark;
+}
+
+/* Ensure our class-based approach overrides media queries */
+@media (prefers-color-scheme: dark) {
+  /* Only apply system dark mode when no explicit theme is set */
+  :root:not(.light):not(.dark):not([data-theme]) {
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  /* Only apply system light mode when no explicit theme is set */
+  :root:not(.light):not(.dark):not([data-theme]) {
+    color-scheme: light;
+  }
+}
+
+/* Explicit theme classes have highest specificity */
+.light,
+[data-theme="light"] {
+  color-scheme: light !important;
+}
+
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark !important;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

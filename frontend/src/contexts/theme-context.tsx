@@ -38,6 +38,7 @@ export function ThemeProvider({
   React.useEffect(() => {
     const root = window.document.documentElement
 
+    // Always remove both classes first
     root.classList.remove("light", "dark")
 
     if (theme === "system") {
@@ -50,7 +51,11 @@ export function ThemeProvider({
       return
     }
 
+    // For explicit light/dark selection, add the class with higher specificity
     root.classList.add(theme)
+    
+    // Force override of system preferences by setting data attribute
+    root.setAttribute('data-theme', theme)
   }, [theme])
 
   const value = {
