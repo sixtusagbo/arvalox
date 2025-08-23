@@ -75,6 +75,17 @@ class InvoicePDFService:
             alignment=2,  # Right alignment
         ))
 
+    def _format_currency(self, amount: float, organization: Organization) -> str:
+        """Format currency amount using organization's currency settings"""
+        try:
+            # Use the organization's currency symbol
+            symbol = organization.currency_symbol or "$"
+            # Format the amount with proper comma separation
+            return f"{symbol}{amount:,.2f}"
+        except (AttributeError, TypeError):
+            # Fallback to USD formatting if organization currency data is missing
+            return f"${amount:,.2f}"
+
     def generate_invoice_pdf(
         self, 
         invoice: Invoice, 
@@ -123,11 +134,11 @@ class InvoicePDFService:
         story.append(Spacer(1, 0.3 * inch))
         
         # Line items table
-        story.extend(self._build_line_items_table(invoice))
+        story.extend(self._build_line_items_table(invoice, organization))
         story.append(Spacer(1, 0.2 * inch))
         
         # Totals section
-        story.extend(self._build_totals_section(invoice))
+        story.extend(self._build_totals_section(invoice, organization))
         story.append(Spacer(1, 0.3 * inch))
         
         # Notes section
@@ -222,7 +233,7 @@ class InvoicePDFService:
         
         return elements
 
-    def _build_line_items_table(self, invoice: Invoice) -> list:
+    def _build_line_items_table(self, invoice: Invoice, organization: Organization) -> list:
         """Build the line items table"""
         elements = []
         
@@ -235,8 +246,8 @@ class InvoicePDFService:
             row = [
                 item.description,
                 f"{item.quantity:,.2f}",
-                f"${item.unit_price:,.2f}",
-                f"${item.line_total:,.2f}"
+                self._format_currency(item.unit_price, organization),
+                self._format_currency(item.line_total, organization)
             ]
             table_data.append(row)
         
@@ -272,21 +283,21 @@ class InvoicePDFService:
         
         return elements
 
-    def _build_totals_section(self, invoice: Invoice) -> list:
+    def _build_totals_section(self, invoice: Invoice, organization: Organization) -> list:
         """Build the totals section"""
         elements = []
         
         # Totals data
         totals_data = [
-            ['Subtotal:', f"${invoice.subtotal:,.2f}"],
-            ['Tax:', f"${invoice.tax_amount:,.2f}"],
-            ['Total:', f"${invoice.total_amount:,.2f}"],
+            ['Subtotal:', self._format_currency(invoice.subtotal, organization)],
+            ['Tax:', self._format_currency(invoice.tax_amount, organization)],
+            ['Total:', self._format_currency(invoice.total_amount, organization)],
         ]
         
         if invoice.paid_amount > 0:
-            totals_data.append(['Paid:', f"${invoice.paid_amount:,.2f}"])
+            totals_data.append(['Paid:', self._format_currency(invoice.paid_amount, organization)])
             balance = invoice.total_amount - invoice.paid_amount
-            totals_data.append(['Balance Due:', f"${balance:,.2f}"])
+            totals_data.append(['Balance Due:', self._format_currency(balance, organization)])
         
         # Create totals table (right-aligned)
         totals_table = Table(totals_data, colWidths=[1.5 * inch, 1.5 * inch])
