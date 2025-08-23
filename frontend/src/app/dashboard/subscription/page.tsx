@@ -78,7 +78,7 @@ export default function SubscriptionPage() {
       setSubscription(currentSub);
       setAvailablePlans(plans);
       setPlanComparison(comparison);
-      setBillingInterval(currentSub.subscription.billing_interval);
+      // Keep default billing interval as 'monthly' instead of using current subscription interval
 
     } catch (error) {
       console.error('Error loading subscription data:', error);
