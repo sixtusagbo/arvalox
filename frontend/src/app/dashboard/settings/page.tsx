@@ -16,6 +16,7 @@ import { CurrencyPicker } from '@/components/ui/currency-picker';
 import { AuthService } from '@/lib/auth';
 import { Currency } from '@/lib/currencies';
 import { formatDate } from '@/lib/date-utils';
+import { CurrencyService } from '@/lib/currency-service';
 
 interface User {
   id: number;
@@ -233,6 +234,10 @@ export default function SettingsPage() {
       setOrgSaving(true);
       const updatedOrg = await AuthService.updateOrganization(orgData);
       setOrganization(updatedOrg);
+      
+      // Reset currency service to pick up new currency settings
+      CurrencyService.reset();
+      
       toast({
         title: 'Success',
         description: 'Organization updated successfully',

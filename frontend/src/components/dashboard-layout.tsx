@@ -38,6 +38,7 @@ import {
   Plus,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CurrencyProvider } from "@/contexts/currency-context";
 
 interface User {
   id: number;
@@ -98,7 +99,8 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   }`;
 
   return (
-    <SidebarProvider>
+    <CurrencyProvider>
+      <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <Sidebar className="border-r">
           <SidebarHeader className="border-b px-4 py-6">
@@ -227,5 +229,6 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
         </div>
       </div>
     </SidebarProvider>
+    </CurrencyProvider>
   );
 }

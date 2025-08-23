@@ -190,10 +190,9 @@ export class InvoiceService {
   }
 
   static formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
+    // Import dynamically to avoid circular dependency
+    const { CurrencyService } = require('./currency-service');
+    return CurrencyService.formatAmountSync(amount);
   }
 
   static formatDate(dateString: string): string {
