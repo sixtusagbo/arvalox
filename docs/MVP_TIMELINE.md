@@ -121,26 +121,38 @@ _Estimated Time: 1-2 weeks_
 
 ---
 
-### 📊 **3. Basic Subscription System**
+### 📊 **3. Organization Currency & Subscription System**
 
-_Estimated Time: 1 week_
+_Estimated Time: 1.5 weeks_
 
-#### 3.1 Simple Plan Management
+#### 3.1 Organization Currency Management
 
-- Define subscription plans (Free, Starter, Pro)
+- Add currency field to organization model (currency code + symbol + name)
+- Implement currency picker library in organization settings (NGN default)
+- Create dynamic currency formatting utilities for frontend (Intl API)
+- Create dynamic currency formatting for backend (PDF generation)
+- Update all financial displays to use organization currency
+- **Testing**: Currency setting tests, formatting tests, PDF generation tests
+
+#### 3.2 Revised Subscription Plans
+
+- Define NGN-based subscription plans:
+  - Basic: 25 customers, 100 invoices/month, ₦5,000/month
+  - Pro: 250 customers, 1000 invoices/month, ₦15,000/month 
+  - Enterprise: Unlimited, API access, ₦35,000/month
 - Create plan configuration and limits
 - Implement plan comparison logic
 - **Testing**: Plan validation tests, limit enforcement tests
 
-#### 3.2 Usage Tracking System
+#### 3.3 Usage Tracking System
 
 - Track invoice count per organization
-- Track user count per organization
-- Implement usage limit enforcement
+- Track customer count per organization
+- Implement usage limit enforcement based on revised plans
 - Create usage analytics for admin
 - **Testing**: Usage tracking tests, limit enforcement tests, analytics tests
 
-#### 3.3 Manual Subscription Management
+#### 3.4 Manual Subscription Management
 
 - Create admin interface for plan assignment
 - Implement plan upgrade/downgrade logic
@@ -216,17 +228,17 @@ _Estimated Time: 2-3 weeks_
 
 ---
 
-### 💰 **6. Payment Tracking**
+### 💰 **6. Payment Tracking & Currency Support**
 
 _Estimated Time: 1-2 weeks_
 
-#### 6.1 Payment Recording System
+#### 6.1 Payment Recording System with Currency Support
 
 - Create payment model with invoice relationships
-- Implement payment recording API endpoints
-- Add partial payment support
-- Create payment validation logic
-- **Testing**: Payment recording tests, validation tests, partial payment tests
+- Implement payment recording API endpoints with currency context
+- Add partial payment support with currency validation
+- Create payment validation logic respecting organization currency
+- **Testing**: Payment recording tests, currency validation tests, partial payment tests
 
 #### 6.2 Payment Allocation Logic
 
@@ -374,12 +386,13 @@ _Estimated Time: 1-2 weeks_
 
 After MVP completion, Phase 2 will include:
 
-- Automated Stripe billing integration
+- **Automated Paystack billing integration** (revised from Stripe)
 - Advanced analytics and reporting
-- Payment gateway integration (Paystack, Flutterwave)
+- Enhanced currency features (multi-currency per organization)
 - Email automation and templates
 - Advanced security features
 - Mobile application development
+- API access for Enterprise plans
 
 ---
 
