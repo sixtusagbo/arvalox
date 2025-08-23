@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
+from app.models.subscription import BillingInterval
 
 
 class Token(BaseModel):
@@ -32,6 +33,9 @@ class RegisterRequest(BaseModel):
     currency_code: str | None = Field(None, min_length=3, max_length=3)
     currency_symbol: str | None = Field(None, min_length=1, max_length=10)
     currency_name: str | None = Field(None, min_length=1, max_length=100)
+    subscription_plan_id: int | None = Field(None, description="Subscription plan ID. If not provided, defaults to trial")
+    billing_interval: BillingInterval | None = Field(None, description="Billing interval for subscription")
+    start_trial: bool = Field(True, description="Whether to start with trial. Ignored if subscription_plan_id is provided")
 
 
 class PasswordResetRequest(BaseModel):

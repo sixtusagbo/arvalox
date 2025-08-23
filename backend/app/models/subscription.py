@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import (
     Boolean,
@@ -112,21 +112,22 @@ class Subscription(BaseModel):
     @property
     def is_active(self) -> bool:
         """Check if subscription is currently active"""
-        return self.status == SubscriptionStatus.ACTIVE and datetime.utcnow() <= self.current_period_end
+        return self.status == SubscriptionStatus.ACTIVE and datetime.now(timezone.utc) <= self.current_period_end
+
 
     @property
     def is_trialing(self) -> bool:
         """Check if subscription is in trial period"""
         if not self.trial_end:
             return False
-        return self.status == SubscriptionStatus.TRIALING and datetime.utcnow() <= self.trial_end
+        return self.status == SubscriptionStatus.TRIALING and datetime.now(timezone.utc) <= self.trial_end
 
     @property
     def days_until_expiry(self) -> Optional[int]:
         """Get days until subscription expires"""
         if not self.current_period_end:
             return None
-        delta = self.current_period_end - datetime.utcnow()
+        delta = self.current_period_end - datetime.now(timezone.utc)
         return max(0, delta.days)
 
     def can_create_invoice(self) -> bool:
@@ -167,8 +168,8 @@ class Subscription(BaseModel):
         if self.trial_end:
             self.trial_end += timedelta(days=days)
         else:
-            self.trial_start = datetime.utcnow()
-            self.trial_end = datetime.utcnow() + timedelta(days=days)
+            self.trial_start = datetime.now(timezone.utc)
+            self.trial_end = datetime.now(timezone.utc) + timedelta(days=days)
             self.status = SubscriptionStatus.TRIALING
 
 

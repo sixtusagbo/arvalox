@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,8 +30,21 @@ import {
 } from "@/lib/subscription-service";
 import { LoadingSpinner } from "@/components/ui/loading";
 import { useToast } from "@/hooks/use-toast";
+import { AuthService } from "@/lib/auth";
+
+interface User {
+  id: number;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  organization_id: number;
+  is_active: boolean;
+  organization_name: string;
+}
 
 export default function SubscriptionPage() {
+  const [user, setUser] = useState<User | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
   const [availablePlans, setAvailablePlans] = useState<SubscriptionPlan[]>([]);
   const [planComparison, setPlanComparison] = useState<PlanComparison | null>(null);
@@ -43,13 +57,17 @@ export default function SubscriptionPage() {
   const router = useRouter();
 
   useEffect(() => {
-    loadSubscriptionData();
+    loadInitialData();
   }, []);
 
-  const loadSubscriptionData = async () => {
+  const loadInitialData = async () => {
     try {
       setIsLoading(true);
       setError(null);
+
+      // Load user data first
+      const userData = await AuthService.getCurrentUser();
+      setUser(userData);
 
       const [currentSub, plans, comparison] = await Promise.all([
         SubscriptionService.getCurrentSubscription(),
@@ -101,7 +119,7 @@ export default function SubscriptionPage() {
       }
 
       // Reload data
-      await loadSubscriptionData();
+      await loadInitialData();
 
     } catch (error) {
       console.error('Error updating subscription:', error);
@@ -133,7 +151,7 @@ export default function SubscriptionPage() {
         description: "Your subscription will remain active until the end of your current billing period.",
       });
       
-      await loadSubscriptionData();
+      await loadInitialData();
     } catch (error) {
       console.error('Error cancelling subscription:', error);
       toast({
@@ -152,7 +170,7 @@ export default function SubscriptionPage() {
     });
   };
 
-  if (isLoading) {
+  if (isLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" />
@@ -162,24 +180,27 @@ export default function SubscriptionPage() {
 
   if (error && !subscription) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Subscription</h1>
-          <p className="text-muted-foreground">Manage your subscription and billing</p>
+      <DashboardLayout user={user}>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold">Subscription</h1>
+            <p className="text-muted-foreground">Manage your subscription and billing</p>
+          </div>
+          
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          
+          <Button onClick={loadInitialData}>Try Again</Button>
         </div>
-        
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-        
-        <Button onClick={loadSubscriptionData}>Try Again</Button>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <DashboardLayout user={user}>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Subscription</h1>
@@ -322,13 +343,13 @@ export default function SubscriptionPage() {
           </Tabs>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {availablePlans.map((plan, index) => (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {availablePlans.filter(plan => plan.is_active).map((plan, index) => (
             <PlanCard
               key={plan.id}
               plan={plan}
               isCurrentPlan={subscription?.subscription.plan.id === plan.id}
-              isPopular={plan.plan_type === 'starter'} // Mark starter as popular
+              isPopular={plan.plan_type === 'professional'} // Mark professional as popular
               billingInterval={billingInterval}
               onSelectPlan={handlePlanSelect}
               isLoading={isUpgrading}
@@ -349,6 +370,7 @@ export default function SubscriptionPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

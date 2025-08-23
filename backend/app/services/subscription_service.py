@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
 
@@ -142,7 +142,7 @@ class SubscriptionService:
         trial_days: int = 14,
     ) -> Subscription:
         """Create a new subscription for an organization"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Calculate period dates
         if billing_interval == BillingInterval.YEARLY:
@@ -211,7 +211,7 @@ class SubscriptionService:
             subscription.billing_interval = billing_interval
             
             # Recalculate period end based on new billing interval
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             if billing_interval == BillingInterval.YEARLY:
                 subscription.current_period_end = now + timedelta(days=365)
             else:
@@ -239,7 +239,7 @@ class SubscriptionService:
         )
         subscription = result.scalar_one()
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         subscription.canceled_at = now
         
         if cancel_immediately:
@@ -271,7 +271,7 @@ class SubscriptionService:
         subscription.ended_at = None
         
         # Extend current period if it has passed
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if subscription.current_period_end <= now:
             if subscription.billing_interval == BillingInterval.YEARLY:
                 subscription.current_period_end = now + timedelta(days=365)
@@ -381,7 +381,7 @@ class SubscriptionService:
         days_ahead: int = 7,
     ) -> List[Subscription]:
         """Get subscriptions expiring within specified days"""
-        future_date = datetime.utcnow() + timedelta(days=days_ahead)
+        future_date = datetime.now(timezone.utc) + timedelta(days=days_ahead)
         
         result = await db.execute(
             select(Subscription)

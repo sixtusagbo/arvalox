@@ -21,6 +21,8 @@ from app.models.organization import Organization
 from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
 from app.services.email_service import email_service
+from app.services.subscription_service import SubscriptionService
+from app.models.subscription import BillingInterval
 from app.schemas.auth import (
     LoginRequest,
     OrganizationResponse,
@@ -80,6 +82,22 @@ async def register(
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    
+    # Create subscription for new organization
+    # Use provided plan or default to Free plan with trial
+    plan_id = user_data.subscription_plan_id or 1  # Default to Free Plan
+    billing_interval = user_data.billing_interval or BillingInterval.MONTHLY
+    start_trial = user_data.start_trial if user_data.subscription_plan_id else True  # Auto-trial if no plan specified
+    trial_days = 14 if start_trial else None
+    
+    await SubscriptionService.create_subscription(
+        db=db,
+        organization_id=organization.id,
+        plan_id=plan_id,
+        billing_interval=billing_interval,
+        start_trial=start_trial,
+        trial_days=trial_days
+    )
 
     # Create tokens
     access_token = create_access_token(
