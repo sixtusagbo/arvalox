@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from datetime import datetime
 
 
 class Token(BaseModel):
@@ -87,3 +88,5 @@ class OrganizationResponse(BaseModel):
     currency_code: str
     currency_symbol: str
     currency_name: str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None

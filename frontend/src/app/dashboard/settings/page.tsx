@@ -15,6 +15,7 @@ import { LoadingState } from '@/components/ui/loading';
 import { CurrencyPicker } from '@/components/ui/currency-picker';
 import { AuthService } from '@/lib/auth';
 import { Currency } from '@/lib/currencies';
+import { formatDate } from '@/lib/date-utils';
 
 interface User {
   id: number;
@@ -484,11 +485,7 @@ export default function SettingsPage() {
                     <div className="space-y-2">
                       <Label>Created</Label>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(organization.created_at).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
+                        {formatDate(organization.created_at)}
                       </p>
                     </div>
                   )}
