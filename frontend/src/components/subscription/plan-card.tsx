@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SubscriptionPlan, SubscriptionService } from "@/lib/subscription-service";
-import { useCurrency } from "@/hooks/use-currency";
 
 interface PlanCardProps {
   plan: SubscriptionPlan;
@@ -26,7 +25,6 @@ export function PlanCard({
   isLoading = false,
   disabled = false,
 }: PlanCardProps) {
-  const { formatAmount } = useCurrency();
   const price = billingInterval === 'yearly' ? plan.yearly_price : plan.monthly_price;
   const monthlyPrice = billingInterval === 'yearly' ? plan.yearly_price / 12 : plan.monthly_price;
   
@@ -95,7 +93,7 @@ export function PlanCard({
         <div className="mt-4">
           <div className="flex items-baseline justify-center">
             <span className="text-3xl font-bold">
-              {formatAmount(price)}
+              {SubscriptionService.formatPrice(price, plan.currency)}
             </span>
             {price > 0 && (
               <span className="text-muted-foreground ml-1">
@@ -106,13 +104,13 @@ export function PlanCard({
           
           {billingInterval === 'yearly' && price > 0 && (
             <p className="text-sm text-muted-foreground mt-1">
-              {formatAmount(monthlyPrice)}/month billed annually
+              {SubscriptionService.formatPrice(monthlyPrice, plan.currency)}/month billed annually
             </p>
           )}
           
           {billingInterval === 'yearly' && price > 0 && plan.monthly_price > 0 && (
             <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
-              Save {formatAmount((plan.monthly_price * 12) - plan.yearly_price)} per year
+              Save {SubscriptionService.formatPrice((plan.monthly_price * 12) - plan.yearly_price, plan.currency)} per year
             </p>
           )}
         </div>
