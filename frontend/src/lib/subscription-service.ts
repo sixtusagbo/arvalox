@@ -272,7 +272,15 @@ export class SubscriptionService {
                    currency === 'EUR' ? '€' :
                    currency === 'USD' ? '$' : 
                    '$';
-    return `${symbol}${amount.toLocaleString()}`;
+    
+    // Use explicit locale formatting for consistent results
+    const formattedAmount = new Intl.NumberFormat('en-NG', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: true
+    }).format(amount);
+    
+    return `${symbol}${formattedAmount}`;
   }
 
   static getPlanColor(planType: string): string {
