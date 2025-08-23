@@ -14,13 +14,23 @@ import { useTheme } from "@/contexts/theme-context"
 
 export function ThemeToggle() {
   const { setTheme, theme } = useTheme()
+  
+  const getCurrentIcon = () => {
+    if (theme === "light") {
+      return <Sun className="h-4 w-4" />
+    }
+    if (theme === "dark") {
+      return <Moon className="h-4 w-4" />
+    }
+    // For system theme, show monitor or determine based on system preference
+    return <Monitor className="h-4 w-4" />
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="h-8 w-8 px-0">
-          <Sun className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          {getCurrentIcon()}
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
