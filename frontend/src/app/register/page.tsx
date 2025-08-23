@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { CurrencyPicker } from "@/components/ui/currency-picker";
+import type { Currency } from "@/lib/currencies";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -18,6 +20,7 @@ export default function RegisterPage() {
     lastName: "",
     organizationName: "",
     organizationSlug: "",
+    currencyCode: "NGN",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -60,6 +63,13 @@ export default function RegisterPage() {
     }
   };
 
+  const handleCurrencyChange = (currency: Currency) => {
+    setFormData(prev => ({
+      ...prev,
+      currencyCode: currency.code,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -81,6 +91,11 @@ export default function RegisterPage() {
 
     try {
       const { AuthService } = await import("@/lib/auth");
+      const { getCurrencyByCode } = await import("@/lib/currencies");
+      
+      // Get full currency data
+      const currency = getCurrencyByCode(formData.currencyCode);
+      
       await AuthService.register({
         email: formData.email,
         password: formData.password,
@@ -88,6 +103,9 @@ export default function RegisterPage() {
         last_name: formData.lastName,
         organization_name: formData.organizationName,
         organization_slug: formData.organizationSlug || undefined,
+        currency_code: currency?.code,
+        currency_symbol: currency?.symbol,
+        currency_name: currency?.name,
       });
       
       router.push("/dashboard");
@@ -198,6 +216,14 @@ export default function RegisterPage() {
                   This will be used in your organization's URL
                 </p>
               </div>
+
+              <CurrencyPicker
+                label="Organization Currency"
+                value={formData.currencyCode}
+                onValueChange={handleCurrencyChange}
+                disabled={isLoading}
+                placeholder="Select your organization's currency"
+              />
               
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>

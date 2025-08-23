@@ -136,6 +136,9 @@ export class AuthService {
     last_name: string;
     organization_name: string;
     organization_slug?: string;
+    currency_code?: string;
+    currency_symbol?: string;
+    currency_name?: string;
   }): Promise<{ access_token: string; refresh_token: string }> {
     const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: "POST",

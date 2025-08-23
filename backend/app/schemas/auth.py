@@ -29,6 +29,9 @@ class RegisterRequest(BaseModel):
     last_name: str = Field(..., min_length=1, max_length=100)
     organization_name: str = Field(..., min_length=1, max_length=255)
     organization_slug: str | None = Field(None, max_length=100)
+    currency_code: str | None = Field(None, min_length=3, max_length=3)
+    currency_symbol: str | None = Field(None, min_length=1, max_length=10)
+    currency_name: str | None = Field(None, min_length=1, max_length=100)
 
 
 class PasswordResetRequest(BaseModel):

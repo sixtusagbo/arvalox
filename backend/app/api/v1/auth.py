@@ -59,6 +59,9 @@ async def register(
         slug=user_data.organization_slug
         or user_data.organization_name.lower().replace(" ", "-"),
         email=user_data.email,
+        currency_code=user_data.currency_code or "NGN",
+        currency_symbol=user_data.currency_symbol or "₦",
+        currency_name=user_data.currency_name or "Nigerian Naira",
     )
     db.add(organization)
     await db.flush()  # Get the organization ID
