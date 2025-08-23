@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { DashboardLayout } from '@/components/dashboard-layout';
+import { LoadingState } from '@/components/ui/loading';
 import { CustomerService, Customer, CustomerCreate, CustomerUpdate, CustomerSearchParams } from '@/lib/customers';
 
 // Memoized CustomerForm component to prevent unnecessary re-renders
@@ -386,14 +387,7 @@ export default function CustomersPage() {
   }, []);
 
   if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   return (
