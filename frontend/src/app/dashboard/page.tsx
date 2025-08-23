@@ -34,6 +34,7 @@ import {
 } from "@/lib/dashboard";
 import { ReportsService, AgingInvoiceDetail } from '@/lib/reports';
 import { LoadingState } from '@/components/ui/loading';
+import { useCurrency } from '@/hooks/use-currency';
 
 interface User {
   id: number;
@@ -55,6 +56,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [sendingReminders, setSendingReminders] = useState(false);
   const router = useRouter();
+  const { formatAmount } = useCurrency();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -170,9 +172,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {DashboardService.formatCurrency(
-                  metrics?.total_outstanding || 0
-                )}
+                {formatAmount(metrics?.total_outstanding || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
                 <span className="inline-flex items-center text-green-600">
@@ -193,7 +193,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {DashboardService.formatCurrency(metrics?.monthly_revenue || 0)}
+                {formatAmount(metrics?.monthly_revenue || 0)}
               </div>
               <p className="text-xs text-muted-foreground">
                 <span
@@ -305,9 +305,7 @@ export default function DashboardPage() {
                             }}></div>
                         </div>
                         <span className="text-sm font-medium">
-                          {DashboardService.formatCurrency(
-                            agingReport?.current || 0
-                          )}
+                          {formatAmount(agingReport?.current || 0)}
                         </span>
                       </div>
                     </div>
@@ -328,9 +326,7 @@ export default function DashboardPage() {
                             }}></div>
                         </div>
                         <span className="text-sm font-medium">
-                          {DashboardService.formatCurrency(
-                            agingReport?.thirty_days || 0
-                          )}
+                          {formatAmount(agingReport?.thirty_days || 0)}
                         </span>
                       </div>
                     </div>
@@ -351,9 +347,7 @@ export default function DashboardPage() {
                             }}></div>
                         </div>
                         <span className="text-sm font-medium">
-                          {DashboardService.formatCurrency(
-                            agingReport?.sixty_days || 0
-                          )}
+                          {formatAmount(agingReport?.sixty_days || 0)}
                         </span>
                       </div>
                     </div>
@@ -385,9 +379,7 @@ export default function DashboardPage() {
                           </Badge>
                         </div>
                         <span className="font-medium">
-                          {DashboardService.formatCurrency(
-                            customer.outstanding_balance
-                          )}
+                          {formatAmount(customer.outstanding_balance)}
                         </span>
                       </div>
                     ))}
@@ -438,7 +430,7 @@ export default function DashboardPage() {
                                 : ""
                             }`}>
                             {activity.type === "payment_received" ? "+" : ""}
-                            {DashboardService.formatCurrency(activity.amount)}
+                            {formatAmount(activity.amount)}
                           </p>
                         )}
                         <p className="text-xs text-muted-foreground">
@@ -502,7 +494,7 @@ export default function DashboardPage() {
                 <CardContent>
                   <p className="text-red-800 mb-3">
                     {overdueInvoices.length} invoices are overdue totaling{" "}
-                    {ReportsService.formatCurrency(
+                    {formatAmount(
                       overdueInvoices.reduce((sum, invoice) => sum + invoice.outstanding_amount, 0)
                     )}
                   </p>

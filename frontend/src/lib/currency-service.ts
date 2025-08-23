@@ -10,9 +10,16 @@ interface OrganizationCurrency {
 class CurrencyService {
   private static currency: OrganizationCurrency | null = null;
   private static initialized = false;
+  private static lastFetchTime = 0;
+  private static CACHE_DURATION = 30000; // 30 seconds cache
 
   static async initialize(): Promise<void> {
-    if (this.initialized && this.currency) return;
+    const now = Date.now();
+    
+    // Use cache if recent and valid
+    if (this.initialized && this.currency && (now - this.lastFetchTime) < this.CACHE_DURATION) {
+      return;
+    }
 
     try {
       const organization = await AuthService.getOrganization();
@@ -22,6 +29,7 @@ class CurrencyService {
         currency_name: organization.currency_name
       };
       this.initialized = true;
+      this.lastFetchTime = now;
     } catch (error) {
       // Fallback to NGN if organization fetch fails
       this.currency = {
@@ -30,6 +38,7 @@ class CurrencyService {
         currency_name: 'Nigerian Naira'
       };
       this.initialized = true;
+      this.lastFetchTime = now;
     }
   }
 
@@ -49,6 +58,16 @@ class CurrencyService {
   }
 
   static formatAmountSync(amount: number): string {
+    const now = Date.now();
+    
+    // Try to refresh cache if it's stale or not initialized
+    if (!this.initialized || (now - this.lastFetchTime) > this.CACHE_DURATION) {
+      // For sync method, we can't await, so we trigger initialization in background
+      this.initialize().catch(() => {
+        // If initialization fails, continue with cached/fallback data
+      });
+    }
+    
     const currency = this.getCurrency();
     const locale = getLocaleForCurrency(currency.currency_code);
     return formatCurrency(amount, currency.currency_code, locale);
@@ -63,6 +82,7 @@ class CurrencyService {
   static reset(): void {
     this.currency = null;
     this.initialized = false;
+    this.lastFetchTime = 0;
   }
 }
 

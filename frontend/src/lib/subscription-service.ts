@@ -265,8 +265,21 @@ export class SubscriptionService {
   static formatPrice(amount: number, currency: string = 'NGN'): string {
     if (amount === 0) return 'Free';
     
-    const symbol = currency === 'NGN' ? '₦' : '$';
-    return `${symbol}${amount.toLocaleString()}`;
+    // Import dynamically to avoid circular dependency
+    const { CurrencyService } = require('./currency-service');
+    
+    // Always use the organization's current currency instead of the passed currency
+    try {
+      return CurrencyService.formatAmountSync(amount);
+    } catch (error) {
+      // Fallback to basic formatting if CurrencyService fails
+      const symbol = currency === 'NGN' ? '₦' : 
+                     currency === 'GBP' ? '£' :
+                     currency === 'EUR' ? '€' :
+                     currency === 'USD' ? '$' : 
+                     '$';
+      return `${symbol}${amount.toLocaleString()}`;
+    }
   }
 
   static getPlanColor(planType: string): string {
