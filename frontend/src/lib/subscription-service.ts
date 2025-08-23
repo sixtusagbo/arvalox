@@ -285,10 +285,10 @@ export class SubscriptionService {
   }
 
   static getUsageColor(percentage: number | null): string {
-    if (percentage === null) return 'text-green-600 bg-green-50';
-    if (percentage >= 90) return 'text-red-600 bg-red-50';
-    if (percentage >= 75) return 'text-yellow-600 bg-yellow-50';
-    return 'text-green-600 bg-green-50';
+    if (percentage === null) return 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20';
+    if (percentage >= 90) return 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-900/20';
+    if (percentage >= 75) return 'text-yellow-600 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-900/20';
+    return 'text-green-600 bg-green-50 dark:text-green-400 dark:bg-green-900/20';
   }
 
   static formatUsagePercentage(percentage: number | null, unlimited: boolean = false): string {

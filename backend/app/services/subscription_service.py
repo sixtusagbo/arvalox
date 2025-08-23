@@ -414,3 +414,52 @@ class SubscriptionService:
             # Note: We don't reset customer and team member counts as they're cumulative
         
         await db.commit()
+
+    @staticmethod
+    async def sync_usage_counts_from_database(
+        db: AsyncSession,
+        subscription_id: int
+    ) -> Subscription:
+        """Sync usage counts with actual database counts"""
+        result = await db.execute(
+            select(Subscription)
+            .options(selectinload(Subscription.organization))
+            .where(Subscription.id == subscription_id)
+        )
+        subscription = result.scalar_one()
+        
+        # Get actual counts from database
+        from app.models.invoice import Invoice
+        from app.models.customer import Customer
+        from app.models.user import User
+        
+        # Count invoices for this organization
+        invoice_result = await db.execute(
+            select(Invoice)
+            .where(Invoice.organization_id == subscription.organization_id)
+        )
+        invoice_count = len(invoice_result.scalars().all())
+        
+        # Count customers for this organization
+        customer_result = await db.execute(
+            select(Customer)
+            .where(Customer.organization_id == subscription.organization_id)
+        )
+        customer_count = len(customer_result.scalars().all())
+        
+        # Count team members for this organization
+        user_result = await db.execute(
+            select(User)
+            .where(User.organization_id == subscription.organization_id)
+        )
+        team_member_count = len(user_result.scalars().all())
+        
+        # Update subscription counts
+        subscription.current_invoice_count = invoice_count
+        subscription.current_customer_count = customer_count
+        subscription.current_team_member_count = max(1, team_member_count)  # Min 1 for owner
+        
+        await db.commit()
+        await db.refresh(subscription)
+        
+        return subscription

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { CurrencyPicker } from "@/components/ui/currency-picker";
 import type { Currency } from "@/lib/currencies";
+import { LightModeOnly } from "@/components/light-mode-only";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -117,7 +118,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+    <LightModeOnly>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -321,6 +323,7 @@ export default function RegisterPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </LightModeOnly>
   );
 }

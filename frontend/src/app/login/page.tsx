@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Loader2, Mail, Lock, ArrowRight, CheckCircle } from "lucide-react";
+import { LightModeOnly } from "@/components/light-mode-only";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -54,7 +55,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+    <LightModeOnly>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl flex items-center justify-center">
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           {/* Left side - Branding and Features */}
@@ -220,6 +222,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </LightModeOnly>
   );
 }

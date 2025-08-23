@@ -109,7 +109,7 @@ export function PlanCard({
           )}
           
           {billingInterval === 'yearly' && price > 0 && plan.monthly_price > 0 && (
-            <p className="text-sm text-green-600 font-medium mt-1">
+            <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-1">
               Save {SubscriptionService.formatPrice((plan.monthly_price * 12) - plan.yearly_price, plan.currency)} per year
             </p>
           )}
@@ -125,13 +125,13 @@ export function PlanCard({
               <li key={index} className="flex items-start">
                 <div className="flex-shrink-0 mt-0.5">
                   {isIncluded ? (
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                   ) : (
-                    <X className="w-4 h-4 text-gray-400" />
+                    <X className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                   )}
                 </div>
                 <div className="ml-3 flex-1">
-                  <span className={`text-sm ${isIncluded ? 'text-gray-900' : 'text-gray-400'}`}>
+                  <span className={`text-sm ${isIncluded ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}>
                     {feature.name}
                   </span>
                   {'value' in feature && (

@@ -60,7 +60,7 @@ export function UsageStatsCard({ stats }: UsageStatsProps) {
             <div key={index} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <Icon className="w-4 h-4 text-gray-600" />
+                  <Icon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                   <span className="font-medium text-sm">{item.label}</span>
                   {item.canPerform ? (
                     <CheckCircle className="w-4 h-4 text-green-600" />
