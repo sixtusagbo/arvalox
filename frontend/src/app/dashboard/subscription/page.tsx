@@ -162,6 +162,35 @@ export default function SubscriptionPage() {
     }
   };
 
+  const handleReactivateSubscription = async () => {
+    if (!subscription) return;
+    
+    if (!confirm('Are you sure you want to reactivate your subscription? Billing will resume according to your current plan.')) {
+      return;
+    }
+
+    try {
+      setIsUpgrading(true);
+      await SubscriptionService.reactivateSubscription();
+      
+      toast({
+        title: "Subscription Reactivated",
+        description: "Your subscription has been successfully reactivated.",
+      });
+      
+      await loadInitialData();
+    } catch (error) {
+      console.error('Error reactivating subscription:', error);
+      toast({
+        variant: "destructive",
+        title: "Reactivation Failed",
+        description: error instanceof Error ? error.message : "Failed to reactivate subscription",
+      });
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -295,13 +324,22 @@ export default function SubscriptionPage() {
                 </div>
 
                 {subscription.subscription.status === 'canceled' && subscription.subscription.canceled_at && (
-                  <Alert>
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      Subscription cancelled on {formatDate(subscription.subscription.canceled_at)}. 
-                      Access continues until {formatDate(subscription.subscription.current_period_end)}.
-                    </AlertDescription>
-                  </Alert>
+                  <div className="space-y-3">
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        Subscription cancelled on {formatDate(subscription.subscription.canceled_at)}. 
+                        Access continues until {formatDate(subscription.subscription.current_period_end)}.
+                      </AlertDescription>
+                    </Alert>
+                    <Button 
+                      onClick={handleReactivateSubscription}
+                      disabled={isUpgrading}
+                      className="w-full"
+                    >
+                      {isUpgrading ? "Reactivating..." : "Reactivate Subscription"}
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -344,7 +382,7 @@ export default function SubscriptionPage() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {availablePlans.filter(plan => plan.is_active).map((plan, index) => (
+          {availablePlans.filter(plan => plan.is_active).map((plan) => (
             <PlanCard
               key={plan.id}
               plan={plan}
