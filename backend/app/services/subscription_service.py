@@ -211,8 +211,9 @@ class SubscriptionService:
         if billing_interval:
             subscription.billing_interval = billing_interval
             
-            # Recalculate period end based on new billing interval
+            # Recalculate period dates based on new billing interval
             now = datetime.now(timezone.utc)
+            subscription.current_period_start = now
             if billing_interval == BillingInterval.YEARLY:
                 subscription.current_period_end = now + timedelta(days=365)
             else:
@@ -559,6 +560,14 @@ class SubscriptionService:
             existing_subscription.billing_interval = billing_interval
             existing_subscription.status = SubscriptionStatus.ACTIVE
             existing_subscription.paystack_customer_code = transaction_data.get("customer", {}).get("customer_code")
+            
+            # Update period dates based on new billing interval
+            now = datetime.now(timezone.utc)
+            existing_subscription.current_period_start = now
+            if billing_interval == BillingInterval.YEARLY:
+                existing_subscription.current_period_end = now + timedelta(days=365)
+            else:
+                existing_subscription.current_period_end = now + timedelta(days=30)
             
             # Reset trial if it was trial
             if existing_subscription.status == SubscriptionStatus.TRIALING:
