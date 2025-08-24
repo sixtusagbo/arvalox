@@ -29,6 +29,7 @@ export default function InvoiceViewPage() {
   const params = useParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -134,6 +135,7 @@ export default function InvoiceViewPage() {
     if (!invoice) return;
 
     try {
+      setIsSending(true);
       const result = await InvoiceService.sendInvoiceEmail(invoice.id);
       toast({
         title: 'Success',
@@ -151,6 +153,8 @@ export default function InvoiceViewPage() {
         description: error instanceof Error ? error.message : 'Failed to send invoice email',
         variant: 'destructive',
       });
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -213,9 +217,9 @@ export default function InvoiceViewPage() {
               </Button>
             )}
             {invoice.status === 'draft' && (
-              <Button onClick={handleSendEmail}>
+              <Button onClick={handleSendEmail} disabled={isSending}>
                 <Send className="mr-2 h-4 w-4" />
-                Send Invoice
+                {isSending ? 'Sending...' : 'Send Invoice'}
               </Button>
             )}
           </div>
@@ -394,9 +398,9 @@ export default function InvoiceViewPage() {
                   </Button>
                 )}
                 {invoice.status === 'draft' && (
-                  <Button variant="outline" className="w-full" onClick={handleSendEmail}>
+                  <Button variant="outline" className="w-full" onClick={handleSendEmail} disabled={isSending}>
                     <Send className="mr-2 h-4 w-4" />
-                    Send Invoice
+                    {isSending ? 'Sending...' : 'Send Invoice'}
                   </Button>
                 )}
                 <Button 

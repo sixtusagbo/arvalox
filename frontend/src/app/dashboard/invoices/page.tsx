@@ -40,6 +40,7 @@ export default function InvoicesPage() {
   const [dateToFilter, setDateToFilter] = useState('');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingInvoice, setDeletingInvoice] = useState<Invoice | null>(null);
+  const [sendingInvoices, setSendingInvoices] = useState<Set<number>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -138,6 +139,35 @@ export default function InvoicesPage() {
         title: 'Error',
         description: 'Failed to download invoice PDF',
         variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSendInvoice = async (invoiceId: number) => {
+    try {
+      setSendingInvoices(prev => new Set(prev).add(invoiceId));
+      const result = await InvoiceService.sendInvoiceEmail(invoiceId);
+      
+      toast({
+        title: 'Success',
+        description: result.message,
+      });
+      
+      // Refresh the invoice list to get updated status
+      if (result.status_updated) {
+        loadInvoices();
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to send invoice email',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingInvoices(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(invoiceId);
+        return newSet;
       });
     }
   };
@@ -299,9 +329,12 @@ export default function InvoicesPage() {
                                 Download PDF
                               </DropdownMenuItem>
                               {invoice.status === 'draft' && (
-                                <DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleSendInvoice(invoice.id)}
+                                  disabled={sendingInvoices.has(invoice.id)}
+                                >
                                   <Send className="mr-2 h-4 w-4" />
-                                  Send Invoice
+                                  {sendingInvoices.has(invoice.id) ? 'Sending...' : 'Send Invoice'}
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuSeparator />
