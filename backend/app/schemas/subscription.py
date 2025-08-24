@@ -97,6 +97,20 @@ class SubscriptionUpdateRequest(BaseModel):
     paystack_subscription_code: Optional[str] = Field(None, description="Paystack subscription code")
 
 
+class PaystackPaymentRequest(BaseModel):
+    """Request schema for initializing Paystack payment"""
+    plan_id: int = Field(..., description="Subscription plan ID")
+    billing_interval: str = Field(..., description="Billing interval (monthly or yearly)")
+    callback_url: str = Field(..., description="Payment callback URL")
+
+
+class PaymentVerificationRequest(BaseModel):
+    """Request schema for verifying Paystack payment"""
+    reference: str = Field(..., description="Payment reference")
+    plan_id: int = Field(..., description="Subscription plan ID")
+    billing_interval: str = Field(..., description="Billing interval (monthly or yearly)")
+
+
 class SubscriptionCancelRequest(BaseModel):
     """Request schema for canceling subscriptions"""
     cancel_immediately: bool = Field(default=False, description="Cancel immediately or at period end")

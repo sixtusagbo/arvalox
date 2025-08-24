@@ -23,6 +23,8 @@ from app.schemas.subscription import (
     SubscriptionCreateRequest,
     SubscriptionUpdateRequest,
     SubscriptionCancelRequest,
+    PaystackPaymentRequest,
+    PaymentVerificationRequest,
     UsageRecordResponse,
     UsageStatsResponse,
     SubscriptionSummaryResponse,
@@ -470,9 +472,7 @@ async def _calculate_usage_stats(subscription: Subscription) -> UsageStatsRespon
 
 @router.post("/initialize-payment")
 async def initialize_paystack_payment(
-    plan_id: int,
-    billing_interval: str,
-    callback_url: str,
+    request: PaystackPaymentRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
@@ -486,7 +486,7 @@ async def initialize_paystack_payment(
     
     # Validate billing interval
     try:
-        billing_interval_enum = BillingInterval(billing_interval)
+        billing_interval_enum = BillingInterval(request.billing_interval)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -504,13 +504,13 @@ async def initialize_paystack_payment(
         transaction_data = await SubscriptionService.initialize_paystack_payment(
             db=db,
             organization_id=current_user.organization_id,
-            plan_id=plan_id,
+            plan_id=request.plan_id,
             billing_interval=billing_interval_enum,
             user_email=current_user.email,
             user_first_name=current_user.first_name,
             user_last_name=current_user.last_name,
             organization_name=organization.name,
-            callback_url=callback_url
+            callback_url=request.callback_url
         )
         
         return {
@@ -527,9 +527,7 @@ async def initialize_paystack_payment(
 
 @router.post("/verify-payment", response_model=SubscriptionResponse)
 async def verify_paystack_payment(
-    reference: str,
-    plan_id: int,
-    billing_interval: str,
+    request: PaymentVerificationRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
@@ -543,7 +541,7 @@ async def verify_paystack_payment(
     
     # Validate billing interval
     try:
-        billing_interval_enum = BillingInterval(billing_interval)
+        billing_interval_enum = BillingInterval(request.billing_interval)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -553,9 +551,9 @@ async def verify_paystack_payment(
     try:
         subscription = await SubscriptionService.process_successful_payment(
             db=db,
-            transaction_reference=reference,
+            transaction_reference=request.reference,
             organization_id=current_user.organization_id,
-            plan_id=plan_id,
+            plan_id=request.plan_id,
             billing_interval=billing_interval_enum
         )
         
