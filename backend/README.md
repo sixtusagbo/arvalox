@@ -6,129 +6,81 @@ FastAPI-based backend for the Arvalox Invoice Management System.
 
 - Python 3.11+
 - PostgreSQL 14+
-- [uv](https://docs.astral.sh/uv/) (recommended) or pip
 
-## Local Development Setup
+## Getting Started
 
-### 1. Clone and Navigate
+### 1. Setup Virtual Environment
 
 ```bash
-git clone <repository-url>
 cd arvalox/backend
-```
-
-### 2. Create Virtual Environment
-
-Using uv (recommended):
-```bash
-uv venv --python 3.11
-```
-
-Or using Python's built-in venv:
-```bash
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate  # Linux/macOS
+# .venv\Scripts\activate   # Windows
 ```
 
-### 3. Install Dependencies
+### 2. Install Dependencies
 
-Using uv:
-```bash
-uv pip install -r requirements.txt
-```
-
-Or using pip:
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Database Setup
+### 3. Database Setup
 
 Create PostgreSQL databases:
 ```bash
-# Connect to PostgreSQL
 psql -U postgres
-
-# Create databases
 CREATE DATABASE arvalox_dev;
 CREATE DATABASE arvalox_test;
-
-
-# Grant privileges
-GRANT ALL PRIVILEGES ON DATABASE arvalox_dev TO postgres;
-GRANT ALL PRIVILEGES ON DATABASE arvalox_test TO postgres;
-
-# Exit
 \q
 ```
 
-### 5. Environment Configuration
+### 4. Environment Configuration
 
-Copy and configure the environment file:
 ```bash
 cp .env.example .env
+# Edit .env with your configuration
 ```
 
-Generate a secure SECRET_KEY:
+Required environment variables:
 ```bash
-python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))"
+# Database
+DATABASE_URL=postgresql://postgres:password@localhost:5432/arvalox_dev
+TEST_DATABASE_URL=postgresql://postgres:password@localhost:5432/arvalox_test
+
+# Security
+SECRET_KEY=your-generated-secret-key-here
+
+# Email
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM_EMAIL=your-email@gmail.com
+
+# Paystack
+PAYSTACK_SECRET_KEY=sk_test_your_secret_key_here
+PAYSTACK_PUBLIC_KEY=pk_test_your_public_key_here
+PAYSTACK_WEBHOOK_SECRET=your_webhook_secret_here
 ```
 
-> Update `.env` with your configuration
+### 5. Database Migration
 
-### 6. Database Migration
-
-Initialize and run migrations:
 ```bash
-# Initialize Alembic (if not already done)
-alembic init alembic
-
-# Create initial migration
-alembic revision --autogenerate -m "Initial migration"
-
-# Apply migrations
 alembic upgrade head
 ```
 
-### 7. Run the Application
+### 6. Run Development Server
 
-Start the development server:
 ```bash
-# Using uvicorn directly
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Or using the run script
-python run.py
 ```
 
-The API will be available at:
-- **API**: http://localhost:8000
-- **Interactive Docs**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+Access the application:
+- API: http://localhost:8000
+- Interactive Docs: http://localhost:8000/docs
 
-## Development Tools
+## Testing
 
-### Linting and Formatting
-
-This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting:
-
-```bash
-# Check for linting issues
-ruff check .
-
-# Fix linting issues automatically
-ruff check . --fix
-
-# Format code
-ruff format .
-
-# Run both linting and formatting
-./scripts/lint.sh
-```
-
-### Testing
-
-Run tests using pytest:
 ```bash
 # Run all tests
 pytest
@@ -137,32 +89,50 @@ pytest
 pytest --cov=app
 
 # Run specific test file
-pytest app/tests/test_main.py
+pytest app/tests/test_subscription.py
+```
 
-# Run with verbose output
-pytest -v
+## Development Tools
+
+### Linting and Formatting
+
+```bash
+# Check linting
+ruff check .
+
+# Fix issues
+ruff check . --fix
+
+# Format code
+ruff format .
 ```
 
 ### Database Operations
 
 ```bash
-# Create a new migration
-alembic revision --autogenerate -m "Description of changes"
+# Create migration
+alembic revision --autogenerate -m "Description"
 
 # Apply migrations
 alembic upgrade head
 
-# Rollback to previous migration
+# Rollback migration
 alembic downgrade -1
-
-# View migration history
-alembic history
 ```
 
-## Contributing
+## Commands to Remember
 
-1. Follow the existing code style (enforced by Ruff)
-2. Write tests for new features
-3. Update documentation as needed
-4. Run linting and tests before committing
+```bash
+# Start backend
+source .venv/bin/activate
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
+# Run tests
+pytest
+
+# Apply migrations
+alembic upgrade head
+
+# Format and lint
+ruff format . && ruff check . --fix
+```
