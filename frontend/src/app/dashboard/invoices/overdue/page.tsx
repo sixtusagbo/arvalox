@@ -212,7 +212,7 @@ export default function OverdueInvoicesPage() {
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
                 {ReportsService.formatCurrency(
-                  overdueInvoices.reduce((sum, invoice) => sum + invoice.outstanding_amount, 0)
+                  overdueInvoices.reduce((sum, invoice) => sum + Number(invoice.outstanding_amount || 0), 0)
                 )}
               </div>
               <p className="text-xs text-muted-foreground">outstanding</p>
@@ -227,7 +227,7 @@ export default function OverdueInvoicesPage() {
             <CardContent>
               <div className="text-2xl font-bold">
                 {overdueInvoices.length > 0 
-                  ? Math.round(overdueInvoices.reduce((sum, invoice) => sum + invoice.days_overdue, 0) / overdueInvoices.length)
+                  ? Math.round(overdueInvoices.reduce((sum, invoice) => sum + Number(invoice.days_overdue || 0), 0) / overdueInvoices.length)
                   : 0
                 } days
               </div>

@@ -101,7 +101,7 @@ class OverdueInvoice(BaseModel):
     total_amount: Decimal = Field(..., decimal_places=2)
     paid_amount: Decimal = Field(..., decimal_places=2)
     outstanding_amount: Decimal = Field(..., decimal_places=2)
-    days_past_due: int = Field(..., ge=0)
+    days_overdue: int = Field(..., ge=0)
     status: str
 
 

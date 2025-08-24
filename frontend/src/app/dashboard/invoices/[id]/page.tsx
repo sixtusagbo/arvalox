@@ -25,6 +25,7 @@ interface User {
 
 export default function InvoiceViewPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const router = useRouter();
   const params = useParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -54,6 +55,8 @@ export default function InvoiceViewPage() {
       } catch (error) {
         console.error("Error checking auth:", error);
         router.push("/login");
+      } finally {
+        setAuthChecked(true);
       }
     };
 
@@ -83,10 +86,10 @@ export default function InvoiceViewPage() {
       }
     };
 
-    if (user) {
+    if (user && authChecked) {
       loadInvoice();
     }
-  }, [user, invoiceId, router, toast]);
+  }, [user, authChecked, invoiceId, router, toast]);
 
   const handleDeleteInvoice = async () => {
     if (!invoice) return;
@@ -158,7 +161,7 @@ export default function InvoiceViewPage() {
     }
   };
 
-  if (!user) {
+  if (!user || !authChecked) {
     return <LoadingState />;
   }
 

@@ -226,7 +226,7 @@ class AgingReportService:
                     "total_amount": invoice.total_amount,
                     "paid_amount": invoice.paid_amount,
                     "outstanding_amount": outstanding_amount,
-                    "days_past_due": days_past_due,
+                    "days_overdue": days_past_due,
                     "status": invoice.status,
                 }
             )
