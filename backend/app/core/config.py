@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from_email: str = ""
 
+    # Paystack
+    paystack_secret_key: str = ""
+    paystack_public_key: str = ""
+    paystack_webhook_secret: str = ""
+
     # Environment
     environment: str = "development"
     debug: bool = True

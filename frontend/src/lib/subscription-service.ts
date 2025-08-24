@@ -310,4 +310,60 @@ export class SubscriptionService {
     if (percentage === null) return 'N/A';
     return `${Math.round(percentage)}%`;
   }
+
+  // Paystack integration methods
+  static async initializePayment(
+    planId: number, 
+    billingInterval: 'monthly' | 'yearly',
+    callbackUrl: string
+  ): Promise<{ authorization_url: string; access_code: string; reference: string }> {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/subscriptions/initialize-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        plan_id: planId,
+        billing_interval: billingInterval,
+        callback_url: callbackUrl
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to initialize payment');
+    }
+    
+    const result = await response.json();
+    return result.data;
+  }
+
+  static async verifyPayment(
+    reference: string,
+    planId: number,
+    billingInterval: 'monthly' | 'yearly'
+  ): Promise<Subscription> {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/subscriptions/verify-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        reference,
+        plan_id: planId,
+        billing_interval: billingInterval
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to verify payment');
+    }
+    
+    return await response.json();
+  }
+
+  static redirectToPaystack(authorizationUrl: string): void {
+    window.location.href = authorizationUrl;
+  }
 }

@@ -466,3 +466,106 @@ async def _calculate_usage_stats(subscription: Subscription) -> UsageStatsRespon
         can_add_customer=subscription.can_add_customer(),
         can_add_team_member=subscription.can_add_team_member(),
     )
+
+
+@router.post("/initialize-payment")
+async def initialize_paystack_payment(
+    plan_id: int,
+    billing_interval: str,
+    callback_url: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """Initialize Paystack payment for subscription"""
+    # Check permissions
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only organization owners and admins can manage subscriptions"
+        )
+    
+    # Validate billing interval
+    try:
+        billing_interval_enum = BillingInterval(billing_interval)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid billing interval. Must be 'monthly' or 'yearly'"
+        )
+    
+    # Get organization details
+    from app.models.organization import Organization
+    org_result = await db.execute(
+        select(Organization).where(Organization.id == current_user.organization_id)
+    )
+    organization = org_result.scalar_one()
+    
+    try:
+        transaction_data = await SubscriptionService.initialize_paystack_payment(
+            db=db,
+            organization_id=current_user.organization_id,
+            plan_id=plan_id,
+            billing_interval=billing_interval_enum,
+            user_email=current_user.email,
+            user_first_name=current_user.first_name,
+            user_last_name=current_user.last_name,
+            organization_name=organization.name,
+            callback_url=callback_url
+        )
+        
+        return {
+            "status": "success",
+            "data": transaction_data
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.post("/verify-payment", response_model=SubscriptionResponse)
+async def verify_paystack_payment(
+    reference: str,
+    plan_id: int,
+    billing_interval: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """Verify Paystack payment and activate subscription"""
+    # Check permissions
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only organization owners and admins can manage subscriptions"
+        )
+    
+    # Validate billing interval
+    try:
+        billing_interval_enum = BillingInterval(billing_interval)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid billing interval. Must be 'monthly' or 'yearly'"
+        )
+    
+    try:
+        subscription = await SubscriptionService.process_successful_payment(
+            db=db,
+            transaction_reference=reference,
+            organization_id=current_user.organization_id,
+            plan_id=plan_id,
+            billing_interval=billing_interval_enum
+        )
+        
+        # Load plan for response
+        await db.refresh(subscription, ["plan"])
+        
+        return subscription
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )

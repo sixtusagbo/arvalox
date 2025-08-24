@@ -67,6 +67,10 @@ class SubscriptionPlan(BaseModel):
     priority_support = Column(Boolean, default=False)
     multi_currency = Column(Boolean, default=False)
     
+    # Paystack integration
+    paystack_plan_code_monthly = Column(String(100), nullable=True)
+    paystack_plan_code_yearly = Column(String(100), nullable=True)
+    
     # Plan metadata
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)

@@ -92,34 +92,61 @@ export default function SubscriptionPage() {
     try {
       setIsUpgrading(true);
       
-      if (!subscription) {
-        // Create new subscription
-        await SubscriptionService.createSubscription({
-          plan_id: plan.id,
-          billing_interval: billingInterval,
-          start_trial: true,
-          trial_days: 14,
-        });
+      // Check if this is a free plan
+      if (plan.plan_type === 'free' || 
+          (billingInterval === 'monthly' && plan.monthly_price === 0) ||
+          (billingInterval === 'yearly' && plan.yearly_price === 0)) {
         
-        toast({
-          title: "Subscription Created!",
-          description: `Welcome to the ${plan.name}. Your 14-day trial has started.`,
-        });
+        if (!subscription) {
+          // Create new free subscription
+          await SubscriptionService.createSubscription({
+            plan_id: plan.id,
+            billing_interval: billingInterval,
+            start_trial: false,
+            trial_days: 0,
+          });
+          
+          toast({
+            title: "Plan Activated!",
+            description: `Welcome to the ${plan.name}.`,
+          });
+        } else {
+          // Switch to free plan
+          await SubscriptionService.upgradeSubscription({
+            plan_id: plan.id,
+            billing_interval: billingInterval,
+          });
+          
+          toast({
+            title: "Plan Updated!",
+            description: `Successfully switched to ${plan.name}.`,
+          });
+        }
+        
+        // Reload data
+        await loadInitialData();
+        
       } else {
-        // Upgrade existing subscription
-        await SubscriptionService.upgradeSubscription({
+        // Paid plan - redirect to Paystack
+        const callbackUrl = `${window.location.origin}/dashboard/subscription/payment-callback`;
+        
+        const paymentData = await SubscriptionService.initializePayment(
+          plan.id,
+          billingInterval,
+          callbackUrl
+        );
+        
+        // Store payment info in localStorage for verification later
+        localStorage.setItem('pending_payment', JSON.stringify({
+          reference: paymentData.reference,
           plan_id: plan.id,
           billing_interval: billingInterval,
-        });
+          plan_name: plan.name
+        }));
         
-        toast({
-          title: "Plan Updated!",
-          description: `Successfully upgraded to ${plan.name}.`,
-        });
+        // Redirect to Paystack
+        SubscriptionService.redirectToPaystack(paymentData.authorization_url);
       }
-
-      // Reload data
-      await loadInitialData();
 
     } catch (error) {
       console.error('Error updating subscription:', error);
@@ -128,7 +155,6 @@ export default function SubscriptionPage() {
         title: "Update Failed",
         description: error instanceof Error ? error.message : "Failed to update subscription",
       });
-    } finally {
       setIsUpgrading(false);
     }
   };

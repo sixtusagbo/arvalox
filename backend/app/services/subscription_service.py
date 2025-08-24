@@ -15,6 +15,7 @@ from app.models.subscription import (
     SubscriptionStatus,
 )
 from app.models.organization import Organization
+from app.services.paystack_service import PaystackService
 
 
 class SubscriptionService:
@@ -272,7 +273,11 @@ class SubscriptionService:
         
         # Extend current period if it has passed
         now = datetime.now(timezone.utc)
-        if subscription.current_period_end <= now:
+        # Make sure we're comparing timezone-aware datetimes
+        current_end = subscription.current_period_end
+        if current_end.tzinfo is None:
+            current_end = current_end.replace(tzinfo=timezone.utc)
+        if current_end <= now:
             if subscription.billing_interval == BillingInterval.YEARLY:
                 subscription.current_period_end = now + timedelta(days=365)
             else:
@@ -465,3 +470,150 @@ class SubscriptionService:
         await db.refresh(subscription)
         
         return subscription
+
+    @staticmethod
+    async def initialize_paystack_payment(
+        db: AsyncSession,
+        organization_id: int,
+        plan_id: int,
+        billing_interval: BillingInterval,
+        user_email: str,
+        user_first_name: str,
+        user_last_name: str,
+        organization_name: str,
+        callback_url: str
+    ) -> dict:
+        """Initialize Paystack payment for subscription"""
+        paystack = PaystackService()
+        
+        # Get plan details
+        result = await db.execute(
+            select(SubscriptionPlan).where(SubscriptionPlan.id == plan_id)
+        )
+        plan = result.scalar_one()
+        
+        # Determine amount based on billing interval
+        amount = plan.monthly_price if billing_interval == BillingInterval.MONTHLY else plan.yearly_price
+        
+        # Initialize transaction
+        transaction_data = await paystack.initialize_transaction(
+            email=user_email,
+            amount=amount,
+            plan_id=plan_id,
+            organization_name=organization_name,
+            billing_interval=billing_interval,
+            callback_url=callback_url,
+            metadata={
+                "organization_id": organization_id,
+                "user_first_name": user_first_name,
+                "user_last_name": user_last_name
+            }
+        )
+        
+        return transaction_data
+
+    @staticmethod
+    async def process_successful_payment(
+        db: AsyncSession,
+        transaction_reference: str,
+        organization_id: int,
+        plan_id: int,
+        billing_interval: BillingInterval
+    ) -> Subscription:
+        """Process successful payment and create/update subscription"""
+        paystack = PaystackService()
+        
+        # Verify transaction
+        transaction_data = await paystack.verify_transaction(transaction_reference)
+        
+        if transaction_data["status"] != "success":
+            raise Exception("Transaction was not successful")
+            
+        # Get plan details
+        result = await db.execute(
+            select(SubscriptionPlan).where(SubscriptionPlan.id == plan_id)
+        )
+        plan = result.scalar_one()
+        
+        # Check if subscription already exists
+        existing_result = await db.execute(
+            select(Subscription).where(Subscription.organization_id == organization_id)
+        )
+        existing_subscription = existing_result.scalar_one_or_none()
+        
+        if existing_subscription:
+            # Update existing subscription
+            existing_subscription.plan_id = plan_id
+            existing_subscription.billing_interval = billing_interval
+            existing_subscription.status = SubscriptionStatus.ACTIVE
+            existing_subscription.paystack_customer_code = transaction_data.get("customer", {}).get("customer_code")
+            
+            # Reset trial if it was trial
+            if existing_subscription.status == SubscriptionStatus.TRIALING:
+                existing_subscription.trial_end = None
+                existing_subscription.trial_start = None
+            
+            await db.commit()
+            await db.refresh(existing_subscription)
+            return existing_subscription
+        else:
+            # Create new subscription
+            subscription = await SubscriptionService.create_subscription(
+                db=db,
+                organization_id=organization_id,
+                plan_id=plan_id,
+                billing_interval=billing_interval,
+                start_trial=False  # Since they paid, no trial needed
+            )
+            
+            # Add Paystack customer info
+            subscription.paystack_customer_code = transaction_data.get("customer", {}).get("customer_code")
+            
+            await db.commit()
+            await db.refresh(subscription)
+            return subscription
+
+    @staticmethod
+    async def setup_paystack_plans(db: AsyncSession) -> None:
+        """Create Paystack plans for all subscription plans"""
+        paystack = PaystackService()
+        
+        # Get all active plans
+        result = await db.execute(
+            select(SubscriptionPlan).where(SubscriptionPlan.is_active == True)
+        )
+        plans = result.scalars().all()
+        
+        for plan in plans:
+            # Skip free plan
+            if plan.plan_type == PlanType.FREE:
+                continue
+                
+            # Create monthly plan if not exists
+            if not plan.paystack_plan_code_monthly and plan.monthly_price > 0:
+                monthly_plan = await paystack.create_subscription_plan(plan, BillingInterval.MONTHLY)
+                plan.paystack_plan_code_monthly = monthly_plan["plan_code"]
+            
+            # Create yearly plan if not exists
+            if not plan.paystack_plan_code_yearly and plan.yearly_price > 0:
+                yearly_plan = await paystack.create_subscription_plan(plan, BillingInterval.YEARLY)
+                plan.paystack_plan_code_yearly = yearly_plan["plan_code"]
+        
+        await db.commit()
+
+    @staticmethod
+    async def verify_paystack_payment(
+        db: AsyncSession,
+        transaction_reference: str,
+        plan_id: int,
+        billing_interval: BillingInterval,
+        organization_id: int
+    ) -> Subscription:
+        """Verify Paystack payment and create/update subscription"""
+        return await SubscriptionService.process_successful_payment(
+            db=db,
+            transaction_reference=transaction_reference,
+            organization_id=organization_id,
+            plan_id=plan_id,
+            billing_interval=billing_interval
+        )
