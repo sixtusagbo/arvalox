@@ -64,14 +64,15 @@ async def create_customer(
     )
 
     db.add(customer)
-    await db.commit()
-    await db.refresh(customer)
-
-    # Update subscription usage count after successful creation
+    
+    # Update subscription usage count before committing
     if subscription:
         await SubscriptionService.update_usage_count(
-            db, subscription.id, customer_count_delta=1
+            db, subscription.id, customer_count_delta=1, auto_commit=False
         )
+
+    await db.commit()
+    await db.refresh(customer)
 
     return customer
 
@@ -275,12 +276,13 @@ async def delete_customer(
     )
 
     await db.delete(customer)
-    await db.commit()
-
-    # Decrease usage count after successful deletion
+    
+    # Decrease usage count before committing
     if subscription:
         await SubscriptionService.update_usage_count(
-            db, subscription.id, customer_count_delta=-1
+            db, subscription.id, customer_count_delta=-1, auto_commit=False
         )
+
+    await db.commit()
 
     return {"message": "Customer deleted successfully"}

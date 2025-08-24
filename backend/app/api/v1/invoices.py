@@ -117,14 +117,14 @@ async def create_invoice(
         )
         db.add(invoice_item)
 
-    await db.commit()
-    await db.refresh(invoice)
-
-    # Update subscription usage count after successful creation
+    # Update subscription usage count before committing
     if subscription:
         await SubscriptionService.update_usage_count(
-            db, subscription.id, invoice_count_delta=1
+            db, subscription.id, invoice_count_delta=1, auto_commit=False
         )
+
+    await db.commit()
+    await db.refresh(invoice)
 
     # Load the invoice with items and customer
     result = await db.execute(
@@ -746,13 +746,14 @@ async def delete_invoice(
     )
     
     await db.delete(invoice)
-    await db.commit()
-
-    # Decrease usage count after successful deletion
+    
+    # Decrease usage count before committing
     if subscription:
         await SubscriptionService.update_usage_count(
-            db, subscription.id, invoice_count_delta=-1
+            db, subscription.id, invoice_count_delta=-1, auto_commit=False
         )
+
+    await db.commit()
 
     return {"message": "Invoice deleted successfully"}
 

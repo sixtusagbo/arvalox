@@ -291,6 +291,7 @@ class SubscriptionService:
         invoice_count_delta: int = 0,
         customer_count_delta: int = 0,
         team_member_count_delta: int = 0,
+        auto_commit: bool = True,
     ) -> Subscription:
         """Update usage counters for a subscription"""
         result = await db.execute(
@@ -309,8 +310,9 @@ class SubscriptionService:
         subscription.current_customer_count = max(0, subscription.current_customer_count)
         subscription.current_team_member_count = max(1, subscription.current_team_member_count)  # Min 1 for owner
         
-        await db.commit()
-        await db.refresh(subscription)
+        if auto_commit:
+            await db.commit()
+            await db.refresh(subscription)
         
         return subscription
 
