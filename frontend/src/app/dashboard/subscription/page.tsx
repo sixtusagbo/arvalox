@@ -217,6 +217,35 @@ export default function SubscriptionPage() {
     }
   };
 
+  const handleCancelDowngrade = async () => {
+    if (!subscription) return;
+    
+    if (!confirm('Are you sure you want to cancel the scheduled downgrade? You will remain on your current plan.')) {
+      return;
+    }
+
+    try {
+      setIsUpgrading(true);
+      await SubscriptionService.cancelScheduledDowngrade();
+      
+      toast({
+        title: "Downgrade Cancelled",
+        description: "Your scheduled downgrade has been cancelled. You'll remain on your current plan.",
+      });
+      
+      await loadInitialData();
+    } catch (error) {
+      console.error('Error cancelling downgrade:', error);
+      toast({
+        variant: "destructive",
+        title: "Cancellation Failed",
+        description: error instanceof Error ? error.message : "Failed to cancel downgrade",
+      });
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -365,6 +394,26 @@ export default function SubscriptionPage() {
                     </div>
                   )}
                 </div>
+
+                {subscription.subscription.is_downgrading && subscription.subscription.downgrade_effective_date && (
+                  <div className="space-y-3">
+                    <Alert>
+                      <Clock className="h-4 w-4" />
+                      <AlertDescription>
+                        Scheduled to downgrade to Free Plan on {formatDate(subscription.subscription.downgrade_effective_date)}.
+                        You'll keep all current features until then.
+                      </AlertDescription>
+                    </Alert>
+                    <Button 
+                      onClick={handleCancelDowngrade}
+                      disabled={isUpgrading}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {isUpgrading ? "Cancelling..." : "Cancel Downgrade"}
+                    </Button>
+                  </div>
+                )}
 
                 {subscription.subscription.status === 'canceled' && subscription.subscription.canceled_at && (
                   <div className="space-y-3">

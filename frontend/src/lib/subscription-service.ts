@@ -216,6 +216,19 @@ export class SubscriptionService {
     return await response.json();
   }
 
+  static async cancelScheduledDowngrade(): Promise<Subscription> {
+    const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/subscriptions/cancel-downgrade`, {
+      method: 'POST',
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to cancel scheduled downgrade');
+    }
+    
+    return await response.json();
+  }
+
   static async getUsageStats(): Promise<UsageStats> {
     const response = await AuthService.fetchWithAuth(`${API_BASE_URL}/subscriptions/usage`);
     

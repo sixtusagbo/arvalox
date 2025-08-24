@@ -303,6 +303,48 @@ async def reactivate_subscription(
     return reactivated_subscription
 
 
+@router.post("/cancel-downgrade", response_model=SubscriptionResponse)
+async def cancel_scheduled_downgrade(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """Cancel a scheduled downgrade"""
+    # Check permissions
+    if current_user.role not in ["owner", "admin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only organization owners and admins can manage subscriptions"
+        )
+    
+    # Get current subscription
+    subscription = await SubscriptionService.get_organization_subscription(
+        db, current_user.organization_id
+    )
+    
+    if not subscription:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No subscription found for organization"
+        )
+    
+    if not subscription.is_downgrading:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No downgrade is currently scheduled"
+        )
+    
+    # Cancel scheduled downgrade
+    updated_subscription = await SubscriptionService.cancel_scheduled_downgrade(
+        db=db,
+        subscription_id=subscription.id,
+    )
+    
+    # Load plan for response
+    await db.refresh(updated_subscription, ["plan"])
+    
+    return updated_subscription
+
+
 @router.get("/usage", response_model=UsageStatsResponse)
 async def get_usage_stats(
     current_user: User = Depends(get_current_user),
