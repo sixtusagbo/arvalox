@@ -117,7 +117,7 @@ class Subscription(BaseModel):
     
     # Relationships
     organization = relationship("Organization", back_populates="subscription")
-    plan = relationship("SubscriptionPlan", back_populates="subscriptions")
+    plan = relationship("SubscriptionPlan", foreign_keys=[plan_id], back_populates="subscriptions")
     downgrade_plan = relationship("SubscriptionPlan", foreign_keys=[downgrade_to_plan_id])
     usage_records = relationship("UsageRecord", back_populates="subscription", cascade="all, delete-orphan")
 

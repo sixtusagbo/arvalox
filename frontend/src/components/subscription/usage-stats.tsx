@@ -3,8 +3,14 @@
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Users, UserPlus, AlertTriangle, CheckCircle } from "lucide-react";
+import { FileText, Users, UserPlus, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { UsageStats, SubscriptionService } from "@/lib/subscription-service";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface UsageStatsProps {
   stats: UsageStats;
@@ -20,6 +26,7 @@ export function UsageStatsCard({ stats }: UsageStatsProps) {
       percentage: stats.invoice_usage_percentage,
       canPerform: stats.can_create_invoice,
       unlimited: stats.max_invoices_per_month === null,
+      resetMonthly: true,
     },
     {
       label: "Customers",
@@ -29,6 +36,7 @@ export function UsageStatsCard({ stats }: UsageStatsProps) {
       percentage: stats.customer_usage_percentage,
       canPerform: stats.can_add_customer,
       unlimited: stats.max_customers === null,
+      resetMonthly: false,
     },
     {
       label: "Team Members",
@@ -38,18 +46,20 @@ export function UsageStatsCard({ stats }: UsageStatsProps) {
       percentage: stats.team_member_usage_percentage,
       canPerform: stats.can_add_team_member,
       unlimited: stats.max_team_members === null,
+      resetMonthly: false,
     },
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">Usage Statistics</CardTitle>
-        <CardDescription>
-          Current usage for your subscription plan this month
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <TooltipProvider>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Usage Statistics</CardTitle>
+          <CardDescription>
+            Current usage for your subscription plan this month
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
         {usageItems.map((item, index) => {
           const Icon = item.icon;
           const percentage = item.percentage || 0;
@@ -62,6 +72,16 @@ export function UsageStatsCard({ stats }: UsageStatsProps) {
                 <div className="flex items-center space-x-2">
                   <Icon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
                   <span className="font-medium text-sm">{item.label}</span>
+                  {item.resetMonthly && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3 h-3 text-blue-500 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Resets monthly on your billing cycle date</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                   {item.canPerform ? (
                     <CheckCircle className="w-4 h-4 text-green-600" />
                   ) : (
@@ -143,7 +163,8 @@ export function UsageStatsCard({ stats }: UsageStatsProps) {
             </p>
           )}
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }
