@@ -1,23 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { 
   Calendar, 
   CreditCard, 
   AlertTriangle, 
-  CheckCircle, 
-  Clock,
-  Zap,
-  TrendingUp,
-  Settings
+  Clock
 } from "lucide-react";
 
 import { PlanCard } from "@/components/subscription/plan-card";
@@ -47,14 +42,12 @@ export default function SubscriptionPage() {
   const [user, setUser] = useState<User | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionSummary | null>(null);
   const [availablePlans, setAvailablePlans] = useState<SubscriptionPlan[]>([]);
-  const [planComparison, setPlanComparison] = useState<PlanComparison | null>(null);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [isLoading, setIsLoading] = useState(true);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
     loadInitialData();
@@ -291,12 +284,6 @@ export default function SubscriptionPage() {
           <p className="text-muted-foreground">Manage your subscription and billing</p>
         </div>
         
-        {subscription && (
-          <Button variant="outline" onClick={() => router.push('/dashboard/settings')}>
-            <Settings className="w-4 h-4 mr-2" />
-            Billing Settings
-          </Button>
-        )}
       </div>
 
       {subscription && (
