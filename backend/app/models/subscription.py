@@ -76,7 +76,7 @@ class SubscriptionPlan(BaseModel):
     sort_order = Column(Integer, default=0)
     
     # Relationships
-    subscriptions = relationship("Subscription", back_populates="plan")
+    subscriptions = relationship("Subscription", foreign_keys="[Subscription.plan_id]", back_populates="plan")
 
 
 class Subscription(BaseModel):
@@ -118,7 +118,7 @@ class Subscription(BaseModel):
     # Relationships
     organization = relationship("Organization", back_populates="subscription")
     plan = relationship("SubscriptionPlan", foreign_keys=[plan_id], back_populates="subscriptions")
-    downgrade_plan = relationship("SubscriptionPlan", foreign_keys=[downgrade_to_plan_id])
+    downgrade_plan = relationship("SubscriptionPlan", foreign_keys=[downgrade_to_plan_id], post_update=True)
     usage_records = relationship("UsageRecord", back_populates="subscription", cascade="all, delete-orphan")
 
     @property
