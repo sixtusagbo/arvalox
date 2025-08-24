@@ -69,10 +69,16 @@ class SubscriptionResponse(BaseModel):
     current_customer_count: int
     current_team_member_count: int
     
+    # Grace period for downgrades
+    downgrade_to_plan_id: Optional[int] = None
+    downgrade_effective_date: Optional[datetime] = None
+    
     # Computed properties
     is_active: bool
     is_trialing: bool
     days_until_expiry: Optional[int]
+    is_downgrading: bool
+    downgrade_days_remaining: Optional[int]
     
     # Relationships
     plan: SubscriptionPlanResponse

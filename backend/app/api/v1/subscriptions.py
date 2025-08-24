@@ -193,11 +193,11 @@ async def upgrade_subscription(
                 detail="New subscription plan not found"
             )
     
-    # Update subscription
-    updated_subscription = await SubscriptionService.upgrade_subscription(
+    # Update subscription (handles both upgrades and downgrades with grace period)
+    updated_subscription = await SubscriptionService.update_subscription_with_usage_reset(
         db=db,
         subscription_id=subscription.id,
-        new_plan_id=request.plan_id,
+        plan_id=request.plan_id,
         billing_interval=request.billing_interval,
     )
     

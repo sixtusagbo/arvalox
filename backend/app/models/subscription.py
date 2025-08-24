@@ -108,9 +108,17 @@ class Subscription(BaseModel):
     current_customer_count = Column(Integer, default=0)
     current_team_member_count = Column(Integer, default=1)  # Owner counts as 1
     
+    # Grace period for downgrades
+    downgrade_to_plan_id = Column(Integer, ForeignKey("subscription_plans.id"), nullable=True)
+    downgrade_effective_date = Column(DateTime(timezone=True), nullable=True)
+    
+    # Usage reset tracking
+    last_invoice_reset_date = Column(DateTime(timezone=True), nullable=True)
+    
     # Relationships
     organization = relationship("Organization", back_populates="subscription")
     plan = relationship("SubscriptionPlan", back_populates="subscriptions")
+    downgrade_plan = relationship("SubscriptionPlan", foreign_keys=[downgrade_to_plan_id])
     usage_records = relationship("UsageRecord", back_populates="subscription", cascade="all, delete-orphan")
 
     @property
@@ -175,6 +183,80 @@ class Subscription(BaseModel):
             self.trial_start = datetime.now(timezone.utc)
             self.trial_end = datetime.now(timezone.utc) + timedelta(days=days)
             self.status = SubscriptionStatus.TRIALING
+
+    @property
+    def is_downgrading(self) -> bool:
+        """Check if subscription is scheduled for downgrade"""
+        return (self.downgrade_to_plan_id is not None and 
+                self.downgrade_effective_date is not None and
+                datetime.now(timezone.utc) < self.downgrade_effective_date)
+
+    @property
+    def downgrade_days_remaining(self) -> Optional[int]:
+        """Get days until downgrade takes effect"""
+        if not self.is_downgrading or not self.downgrade_effective_date:
+            return None
+        delta = self.downgrade_effective_date - datetime.now(timezone.utc)
+        return max(0, delta.days)
+
+    def get_effective_plan(self) -> "SubscriptionPlan":
+        """Get the plan that should be used for limit checking during grace period"""
+        if self.is_downgrading:
+            # During grace period, keep current plan benefits
+            return self.plan
+        return self.plan
+
+    def schedule_downgrade(self, target_plan_id: int) -> None:
+        """Schedule downgrade at end of current billing period"""
+        self.downgrade_to_plan_id = target_plan_id
+        self.downgrade_effective_date = self.current_period_end
+
+    def cancel_downgrade(self) -> None:
+        """Cancel scheduled downgrade"""
+        self.downgrade_to_plan_id = None
+        self.downgrade_effective_date = None
+
+    def apply_downgrade(self) -> bool:
+        """Apply scheduled downgrade if due"""
+        if not self.is_downgrading:
+            return False
+        
+        now = datetime.now(timezone.utc)
+        if now >= self.downgrade_effective_date:
+            self.plan_id = self.downgrade_to_plan_id
+            self.downgrade_to_plan_id = None
+            self.downgrade_effective_date = None
+            return True
+        return False
+
+    def reset_monthly_usage_if_needed(self) -> bool:
+        """Reset invoice count if new billing period started"""
+        now = datetime.now(timezone.utc)
+        
+        # Initialize reset date if not set
+        if not self.last_invoice_reset_date:
+            self.last_invoice_reset_date = self.current_period_start
+            return False
+        
+        # Check if current period started after last reset
+        if self.current_period_start > self.last_invoice_reset_date:
+            self.current_invoice_count = 0
+            self.last_invoice_reset_date = self.current_period_start
+            return True
+        return False
+
+    def increment_invoice_count(self) -> None:
+        """Increment invoice count and reset if needed"""
+        self.reset_monthly_usage_if_needed()
+        self.current_invoice_count += 1
+
+    def increment_customer_count(self) -> None:
+        """Increment customer count (cumulative)"""
+        self.current_customer_count += 1
+
+    def increment_team_member_count(self) -> None:
+        """Increment team member count (cumulative)"""
+        self.current_team_member_count += 1
 
 
 class UsageRecord(BaseModel):

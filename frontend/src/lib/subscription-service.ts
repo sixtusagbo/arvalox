@@ -41,9 +41,13 @@ export interface Subscription {
   current_invoice_count: number;
   current_customer_count: number;
   current_team_member_count: number;
+  downgrade_to_plan_id: number | null;
+  downgrade_effective_date: string | null;
   is_active: boolean;
   is_trialing: boolean;
   days_until_expiry: number | null;
+  is_downgrading: boolean;
+  downgrade_days_remaining: number | null;
   plan: SubscriptionPlan;
   created_at: string;
   updated_at: string;
@@ -365,5 +369,48 @@ export class SubscriptionService {
 
   static redirectToPaystack(authorizationUrl: string): void {
     window.location.href = authorizationUrl;
+  }
+
+  // Plan tier logic for downgrades/upgrades
+  static getPlanTier(planType: string): number {
+    const planTiers = {
+      'free': 0,
+      'starter': 1,
+      'professional': 2,
+      'enterprise': 3
+    };
+    return planTiers[planType as keyof typeof planTiers] || 0;
+  }
+
+  static isDowngrade(currentPlanType: string, targetPlanType: string): boolean {
+    return this.getPlanTier(currentPlanType) > this.getPlanTier(targetPlanType);
+  }
+
+  static isUpgrade(currentPlanType: string, targetPlanType: string): boolean {
+    return this.getPlanTier(currentPlanType) < this.getPlanTier(targetPlanType);
+  }
+
+  static getPlanButtonText(
+    plan: SubscriptionPlan,
+    subscription: Subscription | null,
+    isCurrentPlan: boolean,
+    isLoading: boolean
+  ): string {
+    if (isLoading) return "Processing...";
+    if (isCurrentPlan) return "Current Plan";
+    
+    if (subscription && this.isDowngrade(subscription.plan.plan_type, plan.plan_type)) {
+      return `Downgrade to ${plan.name}`;
+    }
+    
+    return `Choose ${plan.name}`;
+  }
+
+  static formatDowngradeDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   }
 }

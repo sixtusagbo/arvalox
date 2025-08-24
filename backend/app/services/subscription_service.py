@@ -298,22 +298,34 @@ class SubscriptionService:
         team_member_count_delta: int = 0,
         auto_commit: bool = True,
     ) -> Subscription:
-        """Update usage counters for a subscription"""
+        """Update usage counters for a subscription with monthly reset support"""
         result = await db.execute(
             select(Subscription)
             .where(Subscription.id == subscription_id)
         )
         subscription = result.scalar_one()
         
-        # Update counters
-        subscription.current_invoice_count += invoice_count_delta
-        subscription.current_customer_count += customer_count_delta
-        subscription.current_team_member_count += team_member_count_delta
+        # Use the new reset-aware methods
+        if invoice_count_delta > 0:
+            for _ in range(invoice_count_delta):
+                subscription.increment_invoice_count()
+        elif invoice_count_delta < 0:
+            subscription.reset_monthly_usage_if_needed()
+            subscription.current_invoice_count = max(0, subscription.current_invoice_count + invoice_count_delta)
         
-        # Ensure counters don't go below 0
-        subscription.current_invoice_count = max(0, subscription.current_invoice_count)
-        subscription.current_customer_count = max(0, subscription.current_customer_count)
-        subscription.current_team_member_count = max(1, subscription.current_team_member_count)  # Min 1 for owner
+        if customer_count_delta != 0:
+            if customer_count_delta > 0:
+                for _ in range(customer_count_delta):
+                    subscription.increment_customer_count()
+            else:
+                subscription.current_customer_count = max(0, subscription.current_customer_count + customer_count_delta)
+        
+        if team_member_count_delta != 0:
+            if team_member_count_delta > 0:
+                for _ in range(team_member_count_delta):
+                    subscription.increment_team_member_count()
+            else:
+                subscription.current_team_member_count = max(1, subscription.current_team_member_count + team_member_count_delta)  # Min 1 for owner
         
         if auto_commit:
             await db.commit()
@@ -617,3 +629,147 @@ class SubscriptionService:
             plan_id=plan_id,
             billing_interval=billing_interval
         )
+
+    @staticmethod
+    async def schedule_downgrade(
+        db: AsyncSession,
+        subscription_id: int,
+        target_plan_id: int
+    ) -> Subscription:
+        """Schedule a downgrade to take effect at end of current billing period"""
+        result = await db.execute(
+            select(Subscription)
+            .options(selectinload(Subscription.plan), selectinload(Subscription.downgrade_plan))
+            .where(Subscription.id == subscription_id)
+        )
+        subscription = result.scalar_one()
+        
+        # Validate target plan exists
+        target_plan_result = await db.execute(
+            select(SubscriptionPlan).where(SubscriptionPlan.id == target_plan_id)
+        )
+        target_plan = target_plan_result.scalar_one_or_none()
+        if not target_plan:
+            raise ValueError(f"Target plan with ID {target_plan_id} not found")
+        
+        # Schedule the downgrade
+        subscription.schedule_downgrade(target_plan_id)
+        
+        await db.commit()
+        await db.refresh(subscription)
+        
+        return subscription
+
+    @staticmethod
+    async def cancel_scheduled_downgrade(
+        db: AsyncSession,
+        subscription_id: int
+    ) -> Subscription:
+        """Cancel a scheduled downgrade"""
+        result = await db.execute(
+            select(Subscription).where(Subscription.id == subscription_id)
+        )
+        subscription = result.scalar_one()
+        
+        subscription.cancel_downgrade()
+        
+        await db.commit()
+        await db.refresh(subscription)
+        
+        return subscription
+
+    @staticmethod
+    async def process_scheduled_downgrades(db: AsyncSession) -> List[Subscription]:
+        """Process all scheduled downgrades that are due"""
+        now = datetime.now(timezone.utc)
+        
+        # Find subscriptions with downgrades due
+        result = await db.execute(
+            select(Subscription)
+            .options(selectinload(Subscription.plan), selectinload(Subscription.downgrade_plan))
+            .where(
+                and_(
+                    Subscription.downgrade_to_plan_id.isnot(None),
+                    Subscription.downgrade_effective_date <= now
+                )
+            )
+        )
+        subscriptions = result.scalars().all()
+        
+        processed = []
+        for subscription in subscriptions:
+            if subscription.apply_downgrade():
+                processed.append(subscription)
+        
+        if processed:
+            await db.commit()
+            for sub in processed:
+                await db.refresh(sub)
+        
+        return processed
+
+    @staticmethod
+    async def update_subscription_with_usage_reset(
+        db: AsyncSession,
+        subscription_id: int,
+        plan_id: int,
+        billing_interval: BillingInterval | None = None
+    ) -> Subscription:
+        """Update subscription plan with enhanced downgrade logic"""
+        result = await db.execute(
+            select(Subscription)
+            .options(selectinload(Subscription.plan))
+            .where(Subscription.id == subscription_id)
+        )
+        subscription = result.scalar_one()
+        
+        # Get target plan
+        target_plan_result = await db.execute(
+            select(SubscriptionPlan).where(SubscriptionPlan.id == plan_id)
+        )
+        target_plan = target_plan_result.scalar_one()
+        
+        # Determine if this is a downgrade (higher tier to lower tier)
+        current_plan_tiers = {
+            PlanType.FREE: 0,
+            PlanType.STARTER: 1,
+            PlanType.PROFESSIONAL: 2,
+            PlanType.ENTERPRISE: 3
+        }
+        
+        current_tier = current_plan_tiers.get(subscription.plan.plan_type, 0)
+        target_tier = current_plan_tiers.get(target_plan.plan_type, 0)
+        
+        # If downgrading and subscription is paid (not free), schedule the downgrade
+        if (target_tier < current_tier and 
+            subscription.plan.plan_type != PlanType.FREE and 
+            subscription.status in [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIALING]):
+            
+            return await SubscriptionService.schedule_downgrade(db, subscription_id, plan_id)
+        else:
+            # Immediate upgrade or free plan switch
+            subscription.plan_id = plan_id
+            
+            # Update billing interval if provided
+            if billing_interval:
+                subscription.billing_interval = billing_interval
+                
+                # Recalculate period for free plans or upgrades
+                now = datetime.now(timezone.utc)
+                if billing_interval == BillingInterval.YEARLY:
+                    subscription.current_period_end = now + timedelta(days=365)
+                else:
+                    subscription.current_period_end = now + timedelta(days=30)
+                subscription.current_period_start = now
+            
+            # Reset usage for monthly counter when changing plans
+            subscription.reset_monthly_usage_if_needed()
+            
+            # If upgrading from trial, make it active
+            if subscription.status == SubscriptionStatus.TRIALING:
+                subscription.status = SubscriptionStatus.ACTIVE
+            
+            await db.commit()
+            await db.refresh(subscription)
+            
+            return subscription

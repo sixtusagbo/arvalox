@@ -338,13 +338,30 @@ export default function SubscriptionPage() {
                     </div>
                   )}
 
-                  {subscription.subscription.next_payment_date && (
+                  {subscription.subscription.next_payment_date && !subscription.subscription.is_downgrading && (
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground flex items-center">
                         <CreditCard className="w-4 h-4 mr-2" />
                         Next Payment
                       </span>
                       <span>{formatDate(subscription.subscription.next_payment_date)}</span>
+                    </div>
+                  )}
+
+                  {subscription.subscription.is_downgrading && subscription.subscription.downgrade_effective_date && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center">
+                        <Clock className="w-4 h-4 mr-2" />
+                        Downgrading On
+                      </span>
+                      <span className="text-yellow-600 dark:text-yellow-400 font-medium">
+                        {formatDate(subscription.subscription.downgrade_effective_date)}
+                        {subscription.subscription.downgrade_days_remaining !== null && (
+                          <span className="ml-1">
+                            ({subscription.subscription.downgrade_days_remaining} days)
+                          </span>
+                        )}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -384,6 +401,21 @@ export default function SubscriptionPage() {
               </AlertDescription>
             </Alert>
           )}
+          {/* Scheduled Downgrade Alert */}
+          {subscription.subscription.is_downgrading && subscription.subscription.downgrade_effective_date && (
+            <Alert>
+              <Clock className="h-4 w-4" />
+              <AlertDescription>
+                Your plan will downgrade to Free Plan on {formatDate(subscription.subscription.downgrade_effective_date)}
+                {subscription.subscription.downgrade_days_remaining !== null && (
+                  <span className="font-medium">
+                    {' '}({subscription.subscription.downgrade_days_remaining} days remaining)
+                  </span>
+                )}
+                . You'll keep all current features until then.
+              </AlertDescription>
+            </Alert>
+          )}
         </>
       )}
 
@@ -412,6 +444,7 @@ export default function SubscriptionPage() {
             <PlanCard
               key={plan.id}
               plan={plan}
+              subscription={subscription?.subscription}
               isCurrentPlan={subscription?.subscription.plan.id === plan.id}
               isPopular={plan.plan_type === 'professional'} // Mark professional as popular
               billingInterval={billingInterval}
