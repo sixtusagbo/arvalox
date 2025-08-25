@@ -723,9 +723,8 @@ class SubscriptionService:
         # Determine if this is a downgrade (higher tier to lower tier)
         current_plan_tiers = {
             PlanType.FREE: 0,
-            PlanType.STARTER: 1,
-            PlanType.PROFESSIONAL: 2,
-            PlanType.ENTERPRISE: 3
+            PlanType.PROFESSIONAL: 1,
+            PlanType.ENTERPRISE: 2
         }
         
         current_tier = current_plan_tiers.get(subscription.plan.plan_type, 0)

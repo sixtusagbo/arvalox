@@ -38,20 +38,20 @@ class TestSubscriptionAPI:
     def mock_subscription_plan(self):
         """Mock subscription plan"""
         return SubscriptionPlan(
-            id=1,
+            id=2,
             name="Professional Plan",
             plan_type=PlanType.PROFESSIONAL,
             description="Perfect for growing businesses",
             monthly_price=Decimal("25000.00"),
             yearly_price=Decimal("250000.00"),
             currency="NGN",
-            max_invoices_per_month=100,
-            max_customers=500,
-            max_team_members=5,
-            custom_branding=False,
+            max_invoices_per_month=500,
+            max_customers=1000,
+            max_team_members=10,
+            custom_branding=True,
             api_access=True,
             advanced_reporting=True,
-            priority_support=False,
+            priority_support=True,
             multi_currency=True,
             is_active=True,
             sort_order=2,
@@ -144,13 +144,13 @@ class TestSubscriptionAPI:
             mock_get_db.return_value = mock_db
 
             with TestClient(app) as client:
-                response = client.get("/api/v1/subscriptions/plans/1")
+                response = client.get("/api/v1/subscriptions/plans/2")
 
             assert response.status_code == 200
             data = response.json()
-            assert data["id"] == 1
+            assert data["id"] == 2
             assert data["name"] == "Professional Plan"
-            assert data["monthly_price"] == "15000.00"
+            assert data["monthly_price"] == "25000.00"
 
     def test_get_subscription_plan_not_found(self):
         """Test getting non-existent subscription plan"""
