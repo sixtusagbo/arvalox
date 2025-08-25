@@ -20,7 +20,10 @@ class TestSubscriptionService:
     @pytest.fixture
     def mock_db(self):
         """Mock database session"""
-        return AsyncMock()
+        db_mock = AsyncMock()
+        # Make synchronous methods use MagicMock to avoid coroutine warnings
+        db_mock.add = MagicMock()
+        return db_mock
 
     @pytest.mark.asyncio
     async def test_create_default_plans(self, mock_db):

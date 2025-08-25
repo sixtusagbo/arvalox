@@ -226,7 +226,7 @@ class TestSubscriptionAPI:
         # Set up database session to return our mock plan
         def mock_db_session():
             mock_db = AsyncMock()
-            mock_result = AsyncMock()
+            mock_result = MagicMock()
             mock_result.scalar_one_or_none.return_value = mock_subscription_plan
             mock_db.execute.return_value = mock_result
             return mock_db
@@ -345,7 +345,7 @@ class TestSubscriptionAPI:
         # Set up database session to return our mock plan and subscription
         def mock_db_session():
             mock_db = AsyncMock()
-            mock_result = AsyncMock()
+            mock_result = MagicMock()
             # For the plan lookup in the API, return the new plan
             mock_result.scalar_one_or_none.return_value = new_plan
             mock_db.execute.return_value = mock_result

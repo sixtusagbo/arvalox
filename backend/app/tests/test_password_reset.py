@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timedelta, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.core.security import (
     create_password_reset_token,
@@ -132,7 +132,7 @@ class TestEmailService:
     async def test_send_email_success(self, mock_smtp, mock_smtp_ssl):
         """Test successful email sending"""
         # Mock SMTP server for both SSL and TLS
-        mock_server = AsyncMock()
+        mock_server = MagicMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
         mock_smtp_ssl.return_value.__enter__.return_value = mock_server
 
@@ -172,7 +172,7 @@ class TestEmailService:
     async def test_send_password_reset_email(self, mock_smtp, mock_smtp_ssl):
         """Test sending password reset email"""
         # Mock SMTP server for both SSL and TLS
-        mock_server = AsyncMock()
+        mock_server = MagicMock()
         mock_smtp.return_value.__enter__.return_value = mock_server
         mock_smtp_ssl.return_value.__enter__.return_value = mock_server
 
