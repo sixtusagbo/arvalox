@@ -1,11 +1,13 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from app.main import app
+from app.core.dependencies import get_current_user
 from app.models.subscription import (
     SubscriptionPlan,
     Subscription,
@@ -19,6 +21,16 @@ from app.models.organization import Organization
 
 class TestSubscriptionAPI:
     """Test subscription API endpoints"""
+
+    @pytest.fixture(autouse=True)
+    def setup_auth(self, mock_current_user):
+        """Set up authentication override for all tests"""
+        def get_mock_user():
+            return mock_current_user
+        
+        app.dependency_overrides[get_current_user] = get_mock_user
+        yield
+        app.dependency_overrides.clear()
 
     @pytest.fixture
     def mock_current_user(self):
@@ -55,14 +67,14 @@ class TestSubscriptionAPI:
             multi_currency=True,
             is_active=True,
             sort_order=2,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
     @pytest.fixture
     def mock_subscription(self, mock_subscription_plan):
         """Mock subscription"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         subscription = Subscription(
             id=1,
             organization_id=1,
@@ -98,8 +110,8 @@ class TestSubscriptionAPI:
                 advanced_reporting=False,
                 priority_support=False,
                 multi_currency=False,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             ),
             SubscriptionPlan(
                 id=2,
@@ -115,8 +127,8 @@ class TestSubscriptionAPI:
                 advanced_reporting=True,
                 priority_support=False,
                 multi_currency=True,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
+                updated_at=datetime.now(timezone.utc),
             ),
         ]
 
@@ -152,66 +164,43 @@ class TestSubscriptionAPI:
             assert data["name"] == "Professional Plan"
             assert data["monthly_price"] == "25000.00"
 
-    def test_get_subscription_plan_not_found(self):
+    @pytest.mark.asyncio
+    async def test_get_subscription_plan_not_found(self, client: AsyncClient):
         """Test getting non-existent subscription plan"""
-        with patch("app.core.dependencies.get_db") as mock_get_db:
-            mock_db = AsyncMock()
-            mock_result = MagicMock()
-            mock_result.scalar_one_or_none.return_value = None
-            mock_db.execute.return_value = mock_result
-            mock_get_db.return_value = mock_db
+        response = await client.get("/api/v1/subscriptions/plans/999")
+        assert response.status_code == 404
+        assert "Subscription plan not found" in response.json()["detail"]
 
-            with TestClient(app) as client:
-                response = client.get("/api/v1/subscriptions/plans/999")
-
-            assert response.status_code == 404
-            assert "Subscription plan not found" in response.json()["detail"]
-
-    def test_get_current_subscription(self, mock_current_user, mock_subscription):
+    @pytest.mark.asyncio
+    async def test_get_current_subscription(self, mock_current_user, mock_subscription, client: AsyncClient):
         """Test getting current organization subscription"""
-        with patch("app.core.dependencies.get_current_user") as mock_get_user, \
-             patch("app.services.subscription_service.SubscriptionService.get_organization_subscription") as mock_get_subscription, \
-             patch("app.core.dependencies.get_db") as mock_get_db:
-
-            mock_get_user.return_value = mock_current_user
+        with patch("app.services.subscription_service.SubscriptionService.get_organization_subscription") as mock_get_subscription:
             mock_get_subscription.return_value = mock_subscription
-            
-            # Mock database for usage records
-            mock_db = AsyncMock()
-            mock_result = MagicMock()
-            mock_result.scalars.return_value.all.return_value = []
-            mock_db.execute.return_value = mock_result
-            mock_get_db.return_value = mock_db
+            response = await client.get("/api/v1/subscriptions/current")
 
-            with TestClient(app) as client:
-                response = client.get("/api/v1/subscriptions/current")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["subscription"]["id"] == 1
+        assert data["subscription"]["organization_id"] == 1
+        assert data["usage_stats"]["current_invoice_count"] == 25
+        assert data["usage_stats"]["can_create_invoice"] is True
 
-            assert response.status_code == 200
-            data = response.json()
-            assert data["subscription"]["id"] == 1
-            assert data["subscription"]["organization_id"] == 1
-            assert data["usage_stats"]["current_invoice_count"] == 25
-            assert data["usage_stats"]["can_create_invoice"] is True
-
-    def test_get_current_subscription_not_found(self, mock_current_user):
+    @pytest.mark.asyncio
+    async def test_get_current_subscription_not_found(self, mock_current_user, client: AsyncClient):
         """Test getting current subscription when none exists"""
-        with patch("app.core.dependencies.get_current_user") as mock_get_user, \
-             patch("app.services.subscription_service.SubscriptionService.get_organization_subscription") as mock_get_subscription:
-
-            mock_get_user.return_value = mock_current_user
+        with patch("app.services.subscription_service.SubscriptionService.get_organization_subscription") as mock_get_subscription:
             mock_get_subscription.return_value = None
+            response = await client.get("/api/v1/subscriptions/current")
 
-            with TestClient(app) as client:
-                response = client.get("/api/v1/subscriptions/current")
+        assert response.status_code == 404
+        assert "No subscription found" in response.json()["detail"]
 
-            assert response.status_code == 404
-            assert "No subscription found" in response.json()["detail"]
-
-    def test_create_subscription(self, mock_current_user, mock_subscription_plan):
+    @pytest.mark.asyncio
+    async def test_create_subscription(self, mock_current_user, mock_subscription_plan, client: AsyncClient):
         """Test creating a new subscription"""
         request_data = {
-            "plan_id": 1,
-            "billing_interval": "monthly",
+            "plan_id": 2,
+            "billing_interval": "monthly", 
             "start_trial": True,
             "trial_days": 14
         }
@@ -219,38 +208,29 @@ class TestSubscriptionAPI:
         mock_subscription = Subscription(
             id=1,
             organization_id=1,
-            plan_id=1,
+            plan_id=2,
             status=SubscriptionStatus.TRIALING,
             billing_interval=BillingInterval.MONTHLY,
-            started_at=datetime.utcnow(),
-            current_period_start=datetime.utcnow(),
-            current_period_end=datetime.utcnow() + timedelta(days=30),
+            started_at=datetime.now(timezone.utc),
+            current_period_start=datetime.now(timezone.utc),
+            current_period_end=datetime.now(timezone.utc) + timedelta(days=30),
         )
         mock_subscription.plan = mock_subscription_plan
 
-        with patch("app.core.dependencies.get_current_user") as mock_get_user, \
-             patch("app.services.subscription_service.SubscriptionService.get_organization_subscription") as mock_get_existing, \
-             patch("app.services.subscription_service.SubscriptionService.create_subscription") as mock_create, \
-             patch("app.core.dependencies.get_db") as mock_get_db:
+        with patch("app.services.subscription_service.SubscriptionService.get_organization_subscription") as mock_get_existing, \
+             patch("app.services.subscription_service.SubscriptionService.create_subscription") as mock_create:
 
-            mock_get_user.return_value = mock_current_user
             mock_get_existing.return_value = None  # No existing subscription
             mock_create.return_value = mock_subscription
 
-            # Mock database for plan lookup
-            mock_db = AsyncMock()
-            mock_result = MagicMock()
-            mock_result.scalar_one_or_none.return_value = mock_subscription_plan
-            mock_db.execute.return_value = mock_result
-            mock_get_db.return_value = mock_db
-
-            with TestClient(app) as client:
-                response = client.post("/api/v1/subscriptions/create", json=request_data)
-
+            response = await client.post("/api/v1/subscriptions/create", json=request_data)
+            
+            print(f"Response status: {response.status_code}")
+            print(f"Response body: {response.text}")
             assert response.status_code == 200
             data = response.json()
             assert data["organization_id"] == 1
-            assert data["plan_id"] == 1
+            assert data["plan_id"] == 2
             assert data["status"] == "trialing"
 
     def test_create_subscription_already_exists(self, mock_current_user, mock_subscription):
@@ -272,28 +252,30 @@ class TestSubscriptionAPI:
             assert response.status_code == 400
             assert "already has an active subscription" in response.json()["detail"]
 
-    def test_create_subscription_permission_denied(self):
+    @pytest.mark.asyncio
+    async def test_create_subscription_permission_denied(self, client: AsyncClient):
         """Test creating subscription without proper permissions"""
-        request_data = {
-            "plan_id": 1,
-            "billing_interval": "monthly"
-        }
-
-        # Mock user without owner/admin role
+        # Override the mock user for this specific test
         mock_user = User(
             id=1,
             role="sales_rep",
             organization_id=1,
         )
+        
+        def get_mock_sales_rep_user():
+            return mock_user
+        
+        app.dependency_overrides[get_current_user] = get_mock_sales_rep_user
+        
+        request_data = {
+            "plan_id": 1,
+            "billing_interval": "monthly"
+        }
 
-        with patch("app.core.dependencies.get_current_user") as mock_get_user:
-            mock_get_user.return_value = mock_user
+        response = await client.post("/api/v1/subscriptions/create", json=request_data)
 
-            with TestClient(app) as client:
-                response = client.post("/api/v1/subscriptions/create", json=request_data)
-
-            assert response.status_code == 403
-            assert "Only organization owners and admins" in response.json()["detail"]
+        assert response.status_code == 403
+        assert "Only organization owners and admins" in response.json()["detail"]
 
     def test_upgrade_subscription(self, mock_current_user, mock_subscription, mock_subscription_plan):
         """Test upgrading subscription"""
@@ -347,7 +329,7 @@ class TestSubscriptionAPI:
 
         canceled_subscription = mock_subscription
         canceled_subscription.status = SubscriptionStatus.CANCELED
-        canceled_subscription.canceled_at = datetime.utcnow()
+        canceled_subscription.canceled_at = datetime.now(timezone.utc)
 
         with patch("app.core.dependencies.get_current_user") as mock_get_user, \
              patch("app.services.subscription_service.SubscriptionService.get_organization_subscription") as mock_get_subscription, \

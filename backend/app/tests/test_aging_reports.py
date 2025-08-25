@@ -171,13 +171,13 @@ class TestAgingReportSchemas:
             "total_amount": Decimal("1000.00"),
             "paid_amount": Decimal("0.00"),
             "outstanding_amount": Decimal("1000.00"),
-            "days_past_due": 30,
+            "days_overdue": 30,
             "status": "overdue",
         }
 
         overdue_invoice = OverdueInvoice(**overdue_data)
         assert overdue_invoice.invoice_id == 1
-        assert overdue_invoice.days_past_due == 30
+        assert overdue_invoice.days_overdue == 30
         assert overdue_invoice.outstanding_amount == Decimal("1000.00")
 
     def test_aging_trends_schema(self):

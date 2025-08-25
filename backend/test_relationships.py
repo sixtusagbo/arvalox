@@ -5,10 +5,12 @@ Test script to verify SQLAlchemy relationships work correctly
 import asyncio
 import sys
 from pathlib import Path
+import pytest
 
 # Add the app directory to Python path
 sys.path.insert(0, str(Path(__file__).parent / "app"))
 
+@pytest.mark.asyncio
 async def test_relationships():
     """Test that subscription relationships work"""
     try:
