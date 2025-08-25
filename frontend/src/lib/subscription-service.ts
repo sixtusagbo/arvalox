@@ -3,7 +3,7 @@ import { API_BASE_URL, AuthService } from './auth';
 export interface SubscriptionPlan {
   id: number;
   name: string;
-  plan_type: 'free' | 'starter' | 'professional' | 'enterprise';
+  plan_type: 'free' | 'professional' | 'enterprise';
   description: string | null;
   monthly_price: number;
   yearly_price: number;
@@ -304,8 +304,6 @@ export class SubscriptionService {
     switch (planType) {
       case 'free':
         return 'text-gray-600 bg-gray-50 border-gray-200';
-      case 'starter':
-        return 'text-blue-600 bg-blue-50 border-blue-200';
       case 'professional':
         return 'text-purple-600 bg-purple-50 border-purple-200';
       case 'enterprise':
@@ -388,9 +386,8 @@ export class SubscriptionService {
   static getPlanTier(planType: string): number {
     const planTiers = {
       'free': 0,
-      'starter': 1,
-      'professional': 2,
-      'enterprise': 3
+      'professional': 1,
+      'enterprise': 2
     };
     return planTiers[planType as keyof typeof planTiers] || 0;
   }

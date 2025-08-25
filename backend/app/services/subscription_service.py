@@ -44,47 +44,29 @@ class SubscriptionService:
                 sort_order=1,
             ),
             SubscriptionPlan(
-                name="Starter Plan",
-                plan_type=PlanType.STARTER,
-                description="Great for small businesses getting started",
-                monthly_price=Decimal("15000.00"),  # ₦15,000/month
-                yearly_price=Decimal("150000.00"),  # ₦150,000/year (2 months free)
-                currency="NGN",
-                max_invoices_per_month=100,
-                max_customers=500,
-                max_team_members=5,
-                custom_branding=False,
-                api_access=True,
-                advanced_reporting=True,
-                priority_support=False,
-                multi_currency=True,
-                is_active=True,
-                sort_order=2,
-            ),
-            SubscriptionPlan(
                 name="Professional Plan",
                 plan_type=PlanType.PROFESSIONAL,
                 description="Perfect for growing businesses",
-                monthly_price=Decimal("35000.00"),  # ₦35,000/month
-                yearly_price=Decimal("350000.00"),  # ₦350,000/year (2 months free)
+                monthly_price=Decimal("25000.00"),  # ₦25,000/month
+                yearly_price=Decimal("250000.00"),  # ₦250,000/year (2 months free)
                 currency="NGN",
-                max_invoices_per_month=1000,
-                max_customers=2000,
-                max_team_members=15,
+                max_invoices_per_month=500,
+                max_customers=1000,
+                max_team_members=10,
                 custom_branding=True,
                 api_access=True,
                 advanced_reporting=True,
                 priority_support=True,
                 multi_currency=True,
                 is_active=True,
-                sort_order=3,
+                sort_order=2,
             ),
             SubscriptionPlan(
                 name="Enterprise Plan",
                 plan_type=PlanType.ENTERPRISE,
                 description="Unlimited power for large organizations",
-                monthly_price=Decimal("75000.00"),  # ₦75,000/month
-                yearly_price=Decimal("750000.00"),  # ₦750,000/year (2 months free)
+                monthly_price=Decimal("50000.00"),  # ₦50,000/month
+                yearly_price=Decimal("500000.00"),  # ₦500,000/year (2 months free)
                 currency="NGN",
                 max_invoices_per_month=None,  # Unlimited
                 max_customers=None,  # Unlimited
@@ -95,7 +77,7 @@ class SubscriptionService:
                 priority_support=True,
                 multi_currency=True,
                 is_active=True,
-                sort_order=4,
+                sort_order=3,
             ),
         ]
 

@@ -16,7 +16,7 @@ class Organization(BaseModel):
     # Legacy subscription fields - will be replaced by new subscription system
     subscription_plan = Column(
         String(50), default="trial"
-    )  # trial, starter, professional, enterprise
+    )  # trial, professional, enterprise
     subscription_status = Column(
         String(50), default="active"
     )  # active, cancelled, past_due, unpaid

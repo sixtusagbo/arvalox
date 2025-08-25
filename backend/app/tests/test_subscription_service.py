@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
@@ -32,29 +32,28 @@ class TestSubscriptionService:
 
         plans = await SubscriptionService.create_default_plans(mock_db)
         
-        assert len(plans) == 4
+        assert len(plans) == 3
         assert plans[0].plan_type == PlanType.FREE
-        assert plans[1].plan_type == PlanType.STARTER
-        assert plans[2].plan_type == PlanType.PROFESSIONAL
-        assert plans[3].plan_type == PlanType.ENTERPRISE
+        assert plans[1].plan_type == PlanType.PROFESSIONAL
+        assert plans[2].plan_type == PlanType.ENTERPRISE
         
         # Verify pricing is in NGN
-        assert plans[1].monthly_price == Decimal("15000.00")
-        assert plans[1].yearly_price == Decimal("150000.00")
+        assert plans[1].monthly_price == Decimal("25000.00")
+        assert plans[1].yearly_price == Decimal("250000.00")
         assert plans[1].currency == "NGN"
         
         # Verify feature differences
         assert plans[0].api_access is False  # Free plan
-        assert plans[1].api_access is True   # Starter plan
-        assert plans[2].custom_branding is True   # Professional plan
-        assert plans[3].max_invoices_per_month is None  # Enterprise unlimited
+        assert plans[1].api_access is True   # Professional plan
+        assert plans[1].custom_branding is True   # Professional plan
+        assert plans[2].max_invoices_per_month is None  # Enterprise unlimited
 
     @pytest.mark.asyncio
     async def test_get_all_plans(self, mock_db):
         """Test getting all active plans"""
         mock_plans = [
             SubscriptionPlan(name="Free", plan_type=PlanType.FREE, is_active=True, sort_order=1),
-            SubscriptionPlan(name="Starter", plan_type=PlanType.STARTER, is_active=True, sort_order=2),
+            SubscriptionPlan(name="Professional Plan", plan_type=PlanType.PROFESSIONAL, is_active=True, sort_order=2),
         ]
         
         mock_result = MagicMock()
@@ -65,22 +64,22 @@ class TestSubscriptionService:
         
         assert len(plans) == 2
         assert plans[0].name == "Free"
-        assert plans[1].name == "Starter"
+        assert plans[1].name == "Professional Plan"
 
     @pytest.mark.asyncio
     async def test_get_plan_by_type(self, mock_db):
         """Test getting plan by type"""
-        mock_plan = SubscriptionPlan(name="Starter", plan_type=PlanType.STARTER)
+        mock_plan = SubscriptionPlan(name="Professional Plan", plan_type=PlanType.PROFESSIONAL)
         
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_plan
         mock_db.execute.return_value = mock_result
 
-        plan = await SubscriptionService.get_plan_by_type(mock_db, PlanType.STARTER)
+        plan = await SubscriptionService.get_plan_by_type(mock_db, PlanType.PROFESSIONAL)
         
         assert plan is not None
-        assert plan.name == "Starter"
-        assert plan.plan_type == PlanType.STARTER
+        assert plan.name == "Professional Plan"
+        assert plan.plan_type == PlanType.PROFESSIONAL
 
     @pytest.mark.asyncio
     async def test_create_subscription_with_trial(self, mock_db):
@@ -211,7 +210,7 @@ class TestSubscriptionService:
     @pytest.mark.asyncio
     async def test_reactivate_subscription(self, mock_db):
         """Test reactivating canceled subscription"""
-        past_date = datetime.utcnow() - timedelta(days=5)
+        past_date = datetime.now(timezone.utc) - timedelta(days=5)
         mock_subscription = Subscription(
             id=1,
             status=SubscriptionStatus.CANCELED,
@@ -232,7 +231,7 @@ class TestSubscriptionService:
         assert reactivated_subscription.canceled_at is None
         assert reactivated_subscription.ended_at is None
         # Should extend period since it was expired
-        assert reactivated_subscription.current_period_end > datetime.utcnow()
+        assert reactivated_subscription.current_period_end > datetime.now(timezone.utc)
 
     @pytest.mark.asyncio
     async def test_update_usage_count(self, mock_db):
@@ -343,8 +342,8 @@ class TestSubscriptionService:
     async def test_get_expiring_subscriptions(self, mock_db):
         """Test getting subscriptions expiring soon"""
         mock_subscriptions = [
-            Subscription(id=1, current_period_end=datetime.utcnow() + timedelta(days=3)),
-            Subscription(id=2, current_period_end=datetime.utcnow() + timedelta(days=5)),
+            Subscription(id=1, current_period_end=datetime.now(timezone.utc) + timedelta(days=3)),
+            Subscription(id=2, current_period_end=datetime.now(timezone.utc) + timedelta(days=5)),
         ]
         
         mock_result = MagicMock()

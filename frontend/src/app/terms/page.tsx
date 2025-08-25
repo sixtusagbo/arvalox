@@ -144,19 +144,15 @@ export default function TermsOfServicePage() {
                 <ul className="list-disc pl-6 mb-4 text-gray-700">
                   <li>
                     <strong>Free Plan:</strong> Limited features with usage
-                    restrictions
+                    restrictions (20 invoices/month, 50 customers)
                   </li>
                   <li>
-                    <strong>Starter Plan:</strong> Enhanced features for small
-                    businesses
+                    <strong>Professional Plan:</strong> Perfect for growing businesses 
+                    (500 invoices/month, 1,000 customers, ₦25,000/month)
                   </li>
                   <li>
-                    <strong>Professional Plan:</strong> Advanced features for
-                    growing businesses
-                  </li>
-                  <li>
-                    <strong>Enterprise Plan:</strong> Unlimited access for large
-                    organizations
+                    <strong>Enterprise Plan:</strong> Unlimited power for large organizations 
+                    (Unlimited usage, ₦50,000/month)
                   </li>
                 </ul>
 

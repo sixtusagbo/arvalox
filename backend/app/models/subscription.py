@@ -21,7 +21,6 @@ from app.models.base import BaseModel
 class PlanType(str, Enum):
     """Subscription plan types"""
     FREE = "free"
-    STARTER = "starter"
     PROFESSIONAL = "professional"
     ENTERPRISE = "enterprise"
 

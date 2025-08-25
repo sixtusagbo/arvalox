@@ -39,11 +39,11 @@ class TestSubscriptionAPI:
         """Mock subscription plan"""
         return SubscriptionPlan(
             id=1,
-            name="Starter Plan",
-            plan_type=PlanType.STARTER,
-            description="Great for small businesses",
-            monthly_price=Decimal("15000.00"),
-            yearly_price=Decimal("150000.00"),
+            name="Professional Plan",
+            plan_type=PlanType.PROFESSIONAL,
+            description="Perfect for growing businesses",
+            monthly_price=Decimal("25000.00"),
+            yearly_price=Decimal("250000.00"),
             currency="NGN",
             max_invoices_per_month=100,
             max_customers=500,
@@ -103,8 +103,8 @@ class TestSubscriptionAPI:
             ),
             SubscriptionPlan(
                 id=2,
-                name="Starter Plan",
-                plan_type=PlanType.STARTER,
+                name="Professional Plan",
+                plan_type=PlanType.PROFESSIONAL,
                 monthly_price=Decimal("15000.00"),
                 yearly_price=Decimal("150000.00"),
                 currency="NGN",
@@ -131,7 +131,7 @@ class TestSubscriptionAPI:
             assert len(data) == 2
             assert data[0]["name"] == "Free Plan"
             assert data[0]["monthly_price"] == "0.00"
-            assert data[1]["name"] == "Starter Plan"
+            assert data[1]["name"] == "Professional Plan"
             assert data[1]["monthly_price"] == "15000.00"
 
     def test_get_subscription_plan_by_id(self, mock_subscription_plan):
@@ -149,7 +149,7 @@ class TestSubscriptionAPI:
             assert response.status_code == 200
             data = response.json()
             assert data["id"] == 1
-            assert data["name"] == "Starter Plan"
+            assert data["name"] == "Professional Plan"
             assert data["monthly_price"] == "15000.00"
 
     def test_get_subscription_plan_not_found(self):
@@ -392,8 +392,8 @@ class TestSubscriptionAPI:
         all_plans = [
             SubscriptionPlan(
                 id=1,
-                name="Starter",
-                plan_type=PlanType.STARTER,
+                name="Professional Plan",
+                plan_type=PlanType.PROFESSIONAL,
                 monthly_price=Decimal("15000.00"),
             ),
             SubscriptionPlan(
@@ -417,6 +417,6 @@ class TestSubscriptionAPI:
 
             assert response.status_code == 200
             data = response.json()
-            assert data["current_plan"]["name"] == "Starter Plan"
+            assert data["current_plan"]["name"] == "Professional Plan"
             assert len(data["available_plans"]) == 2
             assert len(data["upgrade_options"]) == 1  # Professional plan

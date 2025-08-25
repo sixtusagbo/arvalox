@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.models.subscription import (
@@ -18,36 +18,36 @@ class TestSubscriptionModels:
     def test_subscription_plan_creation(self):
         """Test SubscriptionPlan model creation"""
         plan = SubscriptionPlan(
-            name="Starter Plan",
-            plan_type=PlanType.STARTER,
-            description="Perfect for small businesses",
-            monthly_price=Decimal("15000.00"),
-            yearly_price=Decimal("150000.00"),
+            name="Professional Plan",
+            plan_type=PlanType.PROFESSIONAL,
+            description="Perfect for growing businesses",
+            monthly_price=Decimal("25000.00"),
+            yearly_price=Decimal("250000.00"),
             currency="NGN",
-            max_invoices_per_month=100,
-            max_customers=500,
-            max_team_members=5,
-            custom_branding=False,
+            max_invoices_per_month=500,
+            max_customers=1000,
+            max_team_members=10,
+            custom_branding=True,
             api_access=True,
-            advanced_reporting=False,
-            priority_support=False,
+            advanced_reporting=True,
+            priority_support=True,
             multi_currency=True,
         )
         
-        assert plan.name == "Starter Plan"
-        assert plan.plan_type == PlanType.STARTER
-        assert plan.monthly_price == Decimal("15000.00")
-        assert plan.yearly_price == Decimal("150000.00")
+        assert plan.name == "Professional Plan"
+        assert plan.plan_type == PlanType.PROFESSIONAL
+        assert plan.monthly_price == Decimal("25000.00")
+        assert plan.yearly_price == Decimal("250000.00")
         assert plan.currency == "NGN"
-        assert plan.max_invoices_per_month == 100
-        assert plan.max_customers == 500
-        assert plan.max_team_members == 5
+        assert plan.max_invoices_per_month == 500
+        assert plan.max_customers == 1000
+        assert plan.max_team_members == 10
         assert plan.api_access is True
-        assert plan.custom_branding is False
+        assert plan.custom_branding is True
 
     def test_subscription_creation(self):
         """Test Subscription model creation"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         end_date = now + timedelta(days=30)
         
         subscription = Subscription(
@@ -73,7 +73,7 @@ class TestSubscriptionModels:
 
     def test_subscription_is_active_property(self):
         """Test subscription is_active property"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         past_date = now - timedelta(days=1)
         future_date = now + timedelta(days=30)
         
@@ -115,7 +115,7 @@ class TestSubscriptionModels:
 
     def test_subscription_is_trialing_property(self):
         """Test subscription is_trialing property"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         past_date = now - timedelta(days=1)
         future_date = now + timedelta(days=7)
         
@@ -161,7 +161,7 @@ class TestSubscriptionModels:
 
     def test_subscription_days_until_expiry(self):
         """Test days_until_expiry property"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         future_date = now + timedelta(days=15)
         past_date = now - timedelta(days=1)
         
@@ -195,7 +195,7 @@ class TestSubscriptionModels:
         # Mock plan with limits
         plan = SubscriptionPlan(
             name="Limited Plan",
-            plan_type=PlanType.STARTER,
+            plan_type=PlanType.PROFESSIONAL,
             monthly_price=Decimal("10000.00"),
             yearly_price=Decimal("100000.00"),
             max_invoices_per_month=10,
@@ -203,7 +203,7 @@ class TestSubscriptionModels:
             max_team_members=3,
         )
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         future_date = now + timedelta(days=30)
         
         subscription = Subscription(
@@ -247,7 +247,7 @@ class TestSubscriptionModels:
             max_team_members=None,  # Unlimited
         )
         
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         future_date = now + timedelta(days=30)
         
         subscription = Subscription(
@@ -271,7 +271,7 @@ class TestSubscriptionModels:
 
     def test_subscription_extend_trial(self):
         """Test trial extension functionality"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         future_date = now + timedelta(days=30)
         
         subscription = Subscription(
@@ -318,7 +318,6 @@ class TestSubscriptionModels:
     def test_plan_type_enum(self):
         """Test PlanType enum values"""
         assert PlanType.FREE.value == "free"
-        assert PlanType.STARTER.value == "starter"
         assert PlanType.PROFESSIONAL.value == "professional"
         assert PlanType.ENTERPRISE.value == "enterprise"
 
