@@ -263,3 +263,82 @@ body {
   background-color: hsl(217.2 32.6% 17.5%) !important;
   color: hsl(210 40% 98%) !important;
 }
+
+/* Force light mode overrides for LightModeOnly component */
+[data-force-light-mode="true"],
+[data-force-light-mode="true"] * {
+  /* Override all dark mode variables with light mode values */
+  --background: #ffffff !important;
+  --foreground: #171717 !important;
+  --muted: hsl(210 40% 98%) !important;
+  --muted-foreground: hsl(215.4 16.3% 46.9%) !important;
+  --popover: hsl(0 0% 100%) !important;
+  --popover-foreground: hsl(222.2 84% 4.9%) !important;
+  --card: hsl(0 0% 100%) !important;
+  --card-foreground: hsl(222.2 84% 4.9%) !important;
+  --border: hsl(214.3 31.8% 91.4%) !important;
+  --input: hsl(214.3 31.8% 91.4%) !important;
+  --primary: hsl(222.2 47.4% 11.2%) !important;
+  --primary-foreground: hsl(210 40% 98%) !important;
+  --secondary: hsl(210 40% 96%) !important;
+  --secondary-foreground: hsl(222.2 84% 4.9%) !important;
+  --accent: hsl(210 40% 96%) !important;
+  --accent-foreground: hsl(222.2 84% 4.9%) !important;
+  --destructive: hsl(0 84.2% 60.2%) !important;
+  --destructive-foreground: hsl(210 40% 98%) !important;
+  --ring: hsl(222.2 84% 4.9%) !important;
+  
+  /* Force color scheme */
+  color-scheme: light !important;
+}
+
+/* Ensure forced light mode works even in dark system preference */
+@media (prefers-color-scheme: dark) {
+  [data-force-light-mode="true"],
+  [data-force-light-mode="true"] * {
+    --background: #ffffff !important;
+    --foreground: #171717 !important;
+    --muted: hsl(210 40% 98%) !important;
+    --muted-foreground: hsl(215.4 16.3% 46.9%) !important;
+    --card: hsl(0 0% 100%) !important;
+    --card-foreground: hsl(222.2 84% 4.9%) !important;
+    color-scheme: light !important;
+  }
+}
+
+/* Override dark mode utility classes when forced light mode is active */
+[data-force-light-mode="true"] .dark\:bg-gray-900 {
+  background-color: #ffffff !important;
+}
+
+[data-force-light-mode="true"] .dark\:text-white {
+  color: #171717 !important;
+}
+
+[data-force-light-mode="true"] .dark\:text-gray-100 {
+  color: #374151 !important;
+}
+
+[data-force-light-mode="true"] .dark\:text-gray-300 {
+  color: #6b7280 !important;
+}
+
+[data-force-light-mode="true"] .dark\:text-gray-400 {
+  color: #9ca3af !important;
+}
+
+[data-force-light-mode="true"] .dark\:bg-gray-800 {
+  background-color: #f9fafb !important;
+}
+
+[data-force-light-mode="true"] .dark\:bg-gray-700 {
+  background-color: #f3f4f6 !important;
+}
+
+[data-force-light-mode="true"] .dark\:border-gray-600 {
+  border-color: #d1d5db !important;
+}
+
+[data-force-light-mode="true"] .dark\:border-gray-700 {
+  border-color: #e5e7eb !important;
+}
