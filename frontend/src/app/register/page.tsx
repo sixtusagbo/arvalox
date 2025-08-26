@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,9 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState<{id: number, name: string, interval: 'monthly' | 'yearly'} | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -45,8 +47,30 @@ export default function RegisterPage() {
       }
     };
 
+    // Check for plan selection from URL params
+    const planId = searchParams.get('plan');
+    const interval = searchParams.get('interval') as 'monthly' | 'yearly';
+    
+    if (planId && interval) {
+      const fetchPlan = async () => {
+        try {
+          const { SubscriptionService } = await import("@/lib/subscription-service");
+          const plan = await SubscriptionService.getPlan(parseInt(planId));
+          setSelectedPlan({
+            id: plan.id,
+            name: plan.name,
+            interval: interval
+          });
+        } catch (error) {
+          console.error('Error fetching selected plan:', error);
+        }
+      };
+      
+      fetchPlan();
+    }
+
     checkAuth();
-  }, [router]);
+  }, [router, searchParams]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -109,7 +133,12 @@ export default function RegisterPage() {
         currency_name: currency?.name,
       });
       
-      router.push("/dashboard");
+      // If a plan was selected, redirect to subscription page with plan info
+      if (selectedPlan) {
+        router.push(`/dashboard/subscription?onboard=true&plan=${selectedPlan.id}&interval=${selectedPlan.interval}`);
+      } else {
+        router.push("/dashboard");
+      }
     } catch (error) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
@@ -136,6 +165,16 @@ export default function RegisterPage() {
             <CardTitle>Sign Up</CardTitle>
             <CardDescription>
               Create your account and organization to get started
+              {selectedPlan && (
+                <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-800 font-medium">
+                    Selected Plan: {selectedPlan.name} ({selectedPlan.interval})
+                  </p>
+                  <p className="text-xs text-blue-600 mt-1">
+                    You'll be able to set up your subscription after creating your account.
+                  </p>
+                </div>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
