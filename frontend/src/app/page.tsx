@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, BarChart3, CreditCard, FileText, Users, Zap } from "lucide-react";
 import { LightModeOnly } from "@/components/light-mode-only";
+import { PricingSection } from "@/components/pricing/pricing-section";
 
 export default function Home() {
   return (
@@ -136,6 +137,9 @@ export default function Home() {
           </Card>
         </div>
       </section>
+
+      {/* Pricing Section */}
+      <PricingSection className="bg-gray-50" />
 
       {/* CTA Section */}
       <section className="bg-blue-600 text-white py-20">
