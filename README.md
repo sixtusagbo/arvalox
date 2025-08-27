@@ -198,9 +198,9 @@ This is my final year project, but feedback and suggestions are welcome:
 
 ## 📞 Contact
 
-**Project Author**: Sixtus Miracle Agbo
-**Institution**: Nnamdi Azikiwe University
-**Email**: miracleagbosixtus@gmail.com
+**Project Author**: Sixtus Miracle Agbo \
+**Institution**: Nnamdi Azikiwe University \
+**Email**: miracleagbosixtus@gmail.com \
 **Project Year**: 2024/2025
 
 ---
